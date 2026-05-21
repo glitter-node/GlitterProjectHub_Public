@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white/95 dark:bg-slate-800/95 rounded-xl p-4 shadow-sm border border-sky-300/80 dark:border-sky-800/80 ring-1 ring-sky-100/80 dark:ring-sky-950/70"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-col gap-3"
+      },
+      "responsive": {
+        "desktop": {
+          "props": {
+            "className": "flex flex-row items-center justify-between gap-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-1 max-w-2xl"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": {
+                "className": "text-lg font-semibold text-slate-950 dark:text-white"
+              },
+              "text": "$t:home.start_post_title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-slate-600 dark:text-slate-300"
+              },
+              "text": "$t:home.start_post_description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 gap-2"
+          },
+          "responsive": {
+            "tablet": {
+              "props": {
+                "className": "grid grid-cols-2 gap-2"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "variant": "primary",
+                "className": "flex min-h-[72px] w-full items-center gap-3 rounded-lg border border-sky-600 bg-sky-600 px-4 py-2.5 text-left text-white shadow-sm transition-colors hover:border-sky-700 hover:bg-sky-700 dark:border-sky-400 dark:bg-sky-500 dark:hover:border-sky-300 dark:hover:bg-sky-600 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "switch",
+                  "params": {
+                    "value": "{{_global.currentUser?.uuid ? 'authenticated' : 'guest'}}"
+                  },
+                  "cases": {
+                    "authenticated": {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/board/qna/write"
+                      }
+                    },
+                    "guest": {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/login",
+                        "query": {
+                          "redirect": "/board/qna/write"
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "question-circle",
+                    "className": "h-6 w-6 shrink-0 text-white"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-base font-semibold text-white"
+                      },
+                      "text": "$t:home.space_labels.qna"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "mt-1 block text-sm text-sky-50"
+                      },
+                      "text": "$t:home.start_post_qna_description"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "variant": "secondary",
+                "className": "flex min-h-[72px] w-full items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-left transition-colors hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/65 dark:hover:border-slate-600 dark:hover:bg-slate-900 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "switch",
+                  "params": {
+                    "value": "{{_global.currentUser?.uuid ? 'authenticated' : 'guest'}}"
+                  },
+                  "cases": {
+                    "authenticated": {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/board/free/write"
+                      }
+                    },
+                    "guest": {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/login",
+                        "query": {
+                          "redirect": "/board/free/write"
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "messages-square",
+                    "className": "h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-semibold text-slate-900 dark:text-white"
+                      },
+                      "text": "$t:home.space_labels.free"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "mt-1 block text-xs text-slate-600 dark:text-slate-400"
+                      },
+                      "text": "$t:home.start_post_free_description"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

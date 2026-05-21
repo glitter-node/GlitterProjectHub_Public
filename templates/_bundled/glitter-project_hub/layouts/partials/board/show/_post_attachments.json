@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(post?.data?.attachments?.length ?? 0) > 0}}",
+  "props": {
+    "className": "mb-6 border-b border-slate-200 dark:border-slate-700 px-6 pt-4"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center justify-between cursor-pointer mb-3"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "setState",
+          "params": {
+            "target": "local",
+            "showAttachments": "{{_local.showAttachments === false ? true : false}}"
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "paperclip",
+                "size": "lg",
+                "className": "text-slate-600 dark:text-slate-400"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-sm font-semibold text-slate-900 dark:text-white"
+              },
+              "text": "$t:board.attachments.title"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "ml-1 px-1.5 py-0.5 text-xs font-medium bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 rounded"
+              },
+              "text": "{{post?.data?.attachments?.length ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "composite",
+          "name": "Icon",
+          "props": {
+            "name": "{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}",
+            "size": "lg",
+            "className": "text-slate-500 dark:text-slate-400"
+          }
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.showAttachments !== false}}",
+      "props": {
+        "className": "space-y-2 mb-2"
+      },
+      "iteration": {
+        "source": "{{post?.data?.attachments ?? []}}",
+        "item_var": "attachment"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "A",
+          "if": "{{post?.data?.abilities?.can_download === true}}",
+          "props": {
+            "href": "{{attachment?.download_url}}",
+            "className": "group flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-teal-400 dark:hover:border-teal-600 hover:shadow-md transition-all cursor-pointer no-underline"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{attachment?.is_image}}",
+              "props": {
+                "className": "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Img",
+                  "props": {
+                    "src": "{{attachment?.preview_url}}",
+                    "alt": "{{attachment?.original_filename}}",
+                    "className": "w-full h-full object-cover"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!attachment?.is_image}}",
+              "props": {
+                "className": "flex-shrink-0 w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "file",
+                    "className": "text-3xl text-slate-400 dark:text-slate-500"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-sm font-medium text-slate-900 dark:text-white truncate mb-1"
+                  },
+                  "text": "{{attachment?.original_filename}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-xs text-slate-500 dark:text-slate-400"
+                  },
+                  "text": "{{attachment?.size_formatted}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "download",
+                    "size": "lg",
+                    "className": "text-slate-400 dark:text-slate-500 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{post?.data?.abilities?.can_download !== true}}",
+          "props": {
+            "className": "group flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "toast",
+              "params": {
+                "type": "warning",
+                "message": "$t:board.attachments.download_no_permission"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{attachment?.is_image}}",
+              "props": {
+                "className": "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Img",
+                  "props": {
+                    "src": "{{attachment?.preview_url}}",
+                    "alt": "{{attachment?.original_filename}}",
+                    "className": "w-full h-full object-cover"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!attachment?.is_image}}",
+              "props": {
+                "className": "flex-shrink-0 w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "file",
+                    "className": "text-3xl text-slate-400 dark:text-slate-500"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-sm font-medium text-slate-900 dark:text-white truncate mb-1"
+                  },
+                  "text": "{{attachment?.original_filename}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-xs text-slate-500 dark:text-slate-400"
+                  },
+                  "text": "{{attachment?.size_formatted}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "download",
+                    "size": "lg",
+                    "className": "text-slate-300 dark:text-slate-600"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

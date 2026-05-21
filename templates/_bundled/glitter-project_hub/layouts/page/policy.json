@@ -1,0 +1,225 @@
+{
+  "version": "0.1.0",
+  "layout_name": "page/policy",
+  "permissions": [],
+  "extends": "_user_base",
+  "meta": {
+    "title": "$t:policy.title",
+    "seo": {
+      "enabled": true,
+      "priority": 0.5,
+      "changefreq": "monthly",
+      "og": {
+        "type": "website",
+        "title": "$t:policy.title",
+        "description": "$t:policy.introduction.body"
+      },
+      "structured_data": {
+        "@type": "WebPage",
+        "name": "$t:policy.title",
+        "description": "$t:policy.introduction.body"
+      }
+    }
+  },
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "py-12"
+        },
+        "responsive": {
+          "portable": {
+            "props": {
+              "className": "py-6 px-4"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "max-w-3xl mx-auto"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "bg-white dark:bg-slate-800 rounded-lg shadow p-10"
+                },
+                "responsive": {
+                  "portable": {
+                    "props": {
+                      "className": "bg-white dark:bg-slate-800 rounded-lg shadow p-5"
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "text-3xl font-bold text-slate-900 dark:text-white mb-8"
+                    },
+                    "responsive": {
+                      "portable": {
+                        "props": {
+                          "className": "text-2xl font-bold text-slate-900 dark:text-white mb-6"
+                        }
+                      }
+                    },
+                    "text": "$t:policy.title"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "space-y-8"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Section",
+                        "props": {
+                          "className": "space-y-3"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                              "className": "text-xl font-semibold text-slate-900 dark:text-white"
+                            },
+                            "text": "$t:policy.introduction.title"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                              "className": "text-base leading-7 text-slate-700 dark:text-slate-300"
+                            },
+                            "text": "$t:policy.introduction.body"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Section",
+                        "props": {
+                          "className": "space-y-3"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                              "className": "text-xl font-semibold text-slate-900 dark:text-white"
+                            },
+                            "text": "$t:policy.rules.title"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                              "className": "list-disc pl-5 space-y-2 text-base leading-7 text-slate-700 dark:text-slate-300"
+                            },
+                            "children": [
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.rules.items.0"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.rules.items.1"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.rules.items.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Section",
+                        "props": {
+                          "className": "space-y-3"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                              "className": "text-xl font-semibold text-slate-900 dark:text-white"
+                            },
+                            "text": "$t:policy.prohibited.title"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                              "className": "list-disc pl-5 space-y-2 text-base leading-7 text-slate-700 dark:text-slate-300"
+                            },
+                            "children": [
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.prohibited.items.0"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.prohibited.items.1"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Li",
+                                "text": "$t:policy.prohibited.items.2"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Section",
+                        "props": {
+                          "className": "space-y-3"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                              "className": "text-xl font-semibold text-slate-900 dark:text-white"
+                            },
+                            "text": "$t:policy.enforcement.title"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                              "className": "text-base leading-7 text-slate-700 dark:text-slate-300"
+                            },
+                            "text": "$t:policy.enforcement.body"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

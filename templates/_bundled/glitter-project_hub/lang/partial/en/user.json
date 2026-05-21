@@ -1,0 +1,63 @@
+{
+  "base_layout_title": "Glitter Project Hub",
+  "base_layout_description": "A collaboration hub for projects and operational knowledge",
+  "menu": "Menu",
+  "search_placeholder": "Enter search term",
+  "profile": {
+    "page_title": "User Profile",
+    "posts_page_title": "Records",
+    "user_not_found": "User not found.",
+    "joined_at": "Joined:",
+    "posts_count": "Records",
+    "comments_count": "Comments",
+    "recent_posts": "Recent Activity",
+    "posts_suffix": "'s Records",
+    "posts_title_for_user": "{{name}}'s Records",
+    "total_posts": "Total {{count}} records",
+    "no_posts": "No records yet.",
+    "view_all": "View All",
+    "back_to_profile": "Profile",
+    "back_to_profile_for_user": "{{name}} Profile",
+    "post_board": "Space",
+    "post_title": "Title",
+    "post_views": "Views",
+    "post_date": "Date",
+    "badge_blinded": "Blinded"
+  },
+  "nav": {
+    "home": "Home",
+    "popular": "Active Flow",
+    "boards": "Spaces",
+    "mypage": "My Page"
+  },
+  "footer": {
+    "info": "Info",
+    "about": "About Us",
+    "faq": "FAQ",
+    "contact": "Contact Us",
+    "policy": "Policy",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "refund": "Community Policy"
+  },
+  "page": {
+    "page_title": "Page",
+    "not_found_title": "Page Not Found",
+    "not_found_description": "The page you requested does not exist or has been deleted.",
+    "back_to_home": "Back to Home",
+    "admin_edit": "Edit",
+    "status_active": "Active",
+    "published_at": "Published",
+    "create_page": "Create Page",
+    "attachments": "Attachments",
+    "download": "Download"
+  },
+  "mypage": {
+    "page_title": "My Page",
+    "profile_title": "Profile",
+    "profile_edit_title": "Edit Profile",
+    "change_password_title": "Change Password",
+    "notifications_title": "Notifications",
+    "board_title": "Participation History"
+  }
+}

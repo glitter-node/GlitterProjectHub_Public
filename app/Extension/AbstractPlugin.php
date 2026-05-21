@@ -1,0 +1,1136 @@
+<?php
+
+namespace App\Extension;
+
+use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Extension\PluginInterface;
+use App\Contracts\Extension\StorageInterface;
+use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Cache\PluginCacheDriver;
+use App\Extension\Storage\PluginStorageDriver;
+use Illuminate\Database\Seeder;
+use ReflectionClass;
+
+/**
+ * 플러그인 추상 클래스
+ *
+ * 플러그인 개발자는 이 클래스를 상속받아 plugin.json만 작성하면 됩니다.
+ * getIdentifier(), getVendor()는 디렉토리명에서 자동 추론됩니다.
+ * getName(), getVersion(), getDescription()은 plugin.json에서 자동 파싱됩니다.
+ *
+ * 참고: 플러그인은 모듈과 달리 관리자 메뉴(getAdminMenus)를 추가할 수 없습니다.
+ */
+abstract class AbstractPlugin implements PluginInterface
+{
+    /**
+     * 플러그인 디렉토리 경로 (캐시)
+     */
+    private ?string $pluginPath = null;
+
+    /**
+     * 플러그인 식별자 (캐시)
+     */
+    private ?string $identifier = null;
+
+    /**
+     * 스토리지 드라이버 인스턴스 (캐시)
+     */
+    private ?StorageInterface $storage = null;
+
+    /**
+     * 캐시 드라이버 인스턴스 (캐시)
+     */
+    private ?CacheInterface $cache = null;
+
+    /**
+     * manifest JSON 캐시
+     */
+    private ?array $manifest = null;
+
+    /**
+     * plugin.json 매니페스트를 파싱하여 캐싱합니다.
+     *
+     * @return array 매니페스트 배열 (파일 미존재 시 빈 배열)
+     */
+    protected function loadManifest(): array
+    {
+        if ($this->manifest === null) {
+            $manifestPath = $this->getPluginPath().'/plugin.json';
+
+            if (file_exists($manifestPath)) {
+                $this->manifest = json_decode(file_get_contents($manifestPath), true) ?? [];
+            } else {
+                $this->manifest = [];
+            }
+        }
+
+        return $this->manifest;
+    }
+
+    /**
+     * 플러그인명 반환 (다국어 지원)
+     *
+     * plugin.json의 name 필드에서 읽습니다. 오버라이드 가능합니다.
+     *
+     * @return string|array 문자열 또는 다국어 배열 ['ko' => '...', 'en' => '...']
+     */
+    public function getName(): string|array
+    {
+        return $this->loadManifest()['name'] ?? $this->getIdentifier();
+    }
+
+    /**
+     * 플러그인 버전 반환
+     *
+     * plugin.json의 version 필드에서 읽습니다. 오버라이드 가능합니다.
+     *
+     * @return string 플러그인 버전
+     */
+    public function getVersion(): string
+    {
+        return $this->loadManifest()['version'] ?? '0.0.0';
+    }
+
+    /**
+     * 플러그인 설명 반환 (다국어 지원)
+     *
+     * plugin.json의 description 필드에서 읽습니다. 오버라이드 가능합니다.
+     *
+     * @return string|array 문자열 또는 다국어 배열 ['ko' => '...', 'en' => '...']
+     */
+    public function getDescription(): string|array
+    {
+        return $this->loadManifest()['description'] ?? '';
+    }
+
+    /**
+     * 플러그인 디렉토리 경로 반환
+     */
+    protected function getPluginPath(): string
+    {
+        if ($this->pluginPath === null) {
+            $reflection = new ReflectionClass($this);
+            $this->pluginPath = dirname($reflection->getFileName());
+        }
+
+        return $this->pluginPath;
+    }
+
+    /**
+     * 플러그인 식별자 반환 (디렉토리명에서 자동 추론)
+     *
+     * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
+     */
+    final public function getIdentifier(): string
+    {
+        if ($this->identifier === null) {
+            $this->identifier = basename($this->getPluginPath());
+        }
+
+        return $this->identifier;
+    }
+
+    /**
+     * 벤더명 반환
+     *
+     * plugin.json 의 vendor 필드를 우선 사용합니다.
+     * 값이 없으면 디렉토리명의 첫 단어(예: 'sirsoft-sample' → 'sirsoft')로 폴백합니다.
+     *
+     * @return string 사람이 읽는 벤더/개발자명 또는 폴백으로 얻은 식별자 prefix
+     */
+    final public function getVendor(): string
+    {
+        $manifestVendor = $this->loadManifest()['vendor'] ?? null;
+
+        if (is_string($manifestVendor) && $manifestVendor !== '') {
+            return $manifestVendor;
+        }
+
+        $parts = explode('-', $this->getIdentifier());
+
+        return $parts[0];
+    }
+
+    /**
+     * 플러그인 설치
+     *
+     * 플러그인 개발자가 설치 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
+     */
+    public function install(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 플러그인 제거
+     *
+     * 플러그인 개발자가 제거 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
+     */
+    public function uninstall(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 플러그인이 런타임에 동적으로 생성한 테이블 목록을 반환합니다.
+     *
+     * 반환된 테이블들은 PluginManager가 일괄 삭제합니다.
+     * 마이그레이션 롤백 전에 호출되므로 메타 테이블이 아직 존재합니다.
+     *
+     * 플러그인 개발자가 동적 테이블이 있는 경우 오버라이드하세요.
+     *
+     * @return array<string> 삭제할 테이블명 배열
+     */
+    public function getDynamicTables(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 활성화
+     *
+     * 플러그인 개발자가 활성화 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
+     */
+    public function activate(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 플러그인 비활성화
+     *
+     * 플러그인 개발자가 비활성화 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
+     */
+    public function deactivate(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 버전별 업그레이드 스텝 반환
+     *
+     * 기본 구현: upgrades/ 디렉토리를 자동 스캔하여 UpgradeStepInterface 구현체를 수집합니다.
+     * 플러그인 개발자가 인라인 클로저를 사용하려면 오버라이드하세요.
+     *
+     * @return array<string, callable|UpgradeStepInterface> 버전 => 스텝 매핑
+     */
+    public function upgrades(): array
+    {
+        return $this->discoverUpgradeSteps();
+    }
+
+    /**
+     * upgrades/ 디렉토리에서 업그레이드 스텝을 자동 발견합니다.
+     *
+     * 파일명 규칙: Upgrade_1_1_0.php → 버전 '1.1.0'
+     * 클래스는 UpgradeStepInterface를 구현해야 합니다.
+     *
+     * @return array<string, UpgradeStepInterface> 버전 => 스텝 매핑
+     */
+    protected function discoverUpgradeSteps(): array
+    {
+        $upgradesPath = $this->getPluginPath().'/upgrades';
+
+        if (! is_dir($upgradesPath)) {
+            return [];
+        }
+
+        $steps = [];
+        $files = glob($upgradesPath.'/Upgrade_*.php');
+
+        if (! $files) {
+            return [];
+        }
+
+        foreach ($files as $file) {
+            $filename = pathinfo($file, PATHINFO_FILENAME);
+
+            // Upgrade_1_1_0 → 1.1.0, Upgrade_1_0_0_beta_1 → 1.0.0-beta.1
+            if (! preg_match('/^Upgrade_(\d+)_(\d+)_(\d+)(?:_([a-zA-Z]\w*(?:_\d+)*))?$/', $filename, $matches)) {
+                continue;
+            }
+
+            $version = "{$matches[1]}.{$matches[2]}.{$matches[3]}";
+
+            if (! empty($matches[4])) {
+                $version .= '-'.str_replace('_', '.', $matches[4]);
+            }
+
+            require_once $file;
+
+            // 네임스페이스 추론: 플러그인 네임스페이스 + Upgrades\ClassName
+            $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
+            $namespace = 'Plugins\\'.$namespacePart.'\\Upgrades\\'.$filename;
+
+            if (class_exists($namespace) && is_subclass_of($namespace, UpgradeStepInterface::class)) {
+                $steps[$version] = new $namespace;
+            }
+        }
+
+        ksort($steps, SORT_NATURAL);
+
+        return $steps;
+    }
+
+    /**
+     * 플러그인 라우트 파일 경로 목록 반환
+     *
+     * 기본적으로 src/routes/api.php, src/routes/web.php를 반환
+     * 파일이 존재하는 경우에만 포함
+     *
+     * @return array<string, string> 라우트 키 => 파일 경로 매핑
+     */
+    public function getRoutes(): array
+    {
+        $routes = [];
+        $basePath = $this->getPluginPath();
+
+        $apiRoute = $basePath.'/src/routes/api.php';
+        $webRoute = $basePath.'/src/routes/web.php';
+
+        if (file_exists($apiRoute)) {
+            $routes['api'] = $apiRoute;
+        }
+
+        if (file_exists($webRoute)) {
+            $routes['web'] = $webRoute;
+        }
+
+        return $routes;
+    }
+
+    /**
+     * 플러그인 마이그레이션 경로 반환
+     *
+     * 기본적으로 database/migrations 디렉토리를 반환
+     * 디렉토리가 존재하는 경우에만 포함
+     *
+     * @return array<string> 마이그레이션 디렉토리 경로 배열
+     */
+    public function getMigrations(): array
+    {
+        $migrationsPath = $this->getPluginPath().'/database/migrations';
+
+        if (is_dir($migrationsPath)) {
+            return [$migrationsPath];
+        }
+
+        return [];
+    }
+
+    /**
+     * 플러그인 뷰 파일 목록 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 뷰가 필요한 경우 오버라이드
+     *
+     * @return array<string> 뷰 디렉토리 경로 배열
+     */
+    public function getViews(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 역할 목록 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 역할이 필요한 경우 오버라이드
+     *
+     * @return array 역할 정의 배열
+     *               [
+     *               [
+     *               'identifier' => 'vendor-plugin.role-name',
+     *               'name' => ['ko' => '...', 'en' => '...'],
+     *               'description' => ['ko' => '...', 'en' => '...'],
+     *               ],
+     *               ]
+     */
+    public function getRoles(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 권한 목록 반환 (단일 레벨 구조)
+     *
+     * 플러그인은 모듈과 달리 단일 레벨 권한 구조를 사용합니다.
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 권한이 필요한 경우 오버라이드
+     *
+     * @return array 권한 정의 배열
+     *               [
+     *               [
+     *               'identifier' => 'vendor-plugin.entity.action',
+     *               'name' => ['ko' => '...', 'en' => '...'],
+     *               'description' => ['ko' => '...', 'en' => '...'],
+     *               'type' => 'admin',  // admin 또는 user (기본값: admin)
+     *               'roles' => ['admin', 'vendor-plugin.manager'],
+     *               ],
+     *               ]
+     */
+    public function getPermissions(): array
+    {
+        return [];
+    }
+
+    /**
+     * 런타임에 동적으로 생성되는 권한 식별자 목록을 반환합니다.
+     *
+     * 동적 권한(예: 사용자 입력에 따라 생성되는 권한)을 보유한 플러그인이 override.
+     * `PluginManager::cleanupStalePluginEntries()` 가 정의 기반 stale 판정에서 이들을 제외합니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicPermissionIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
+     * 런타임에 동적으로 생성되는 역할 식별자 목록을 반환합니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicRoleIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 설정 파일 경로 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 설정 파일이 필요한 경우 오버라이드
+     *
+     * @return array ['config_key' => '/path/to/config.php'] 형식
+     */
+    public function getConfig(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 설정 값 반환 (상세 정보 조회용)
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 설정 값이 필요한 경우 오버라이드
+     *
+     * @return array 설정 값 배열
+     */
+    public function getConfigValues(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인이 제공하는 훅 정보 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 훅이 필요한 경우 오버라이드
+     *
+     * @return array 훅 정의 배열
+     */
+    public function getHooks(): array
+    {
+        return [];
+    }
+
+    /**
+     * 훅 리스너 목록 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 훅 리스너가 필요한 경우 오버라이드
+     *
+     * @return array 훅 리스너 정의 배열
+     */
+    public function getHookListeners(): array
+    {
+        return [];
+    }
+
+    /**
+     * 브로드캐스트 채널 정의를 반환합니다.
+     *
+     * 플러그인에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
+     * 반환된 채널은 PluginManager가 자동으로 Broadcast::channel()에 등록합니다.
+     *
+     * 네이밍 규칙: plugin.{identifier}.{resource}.{param}
+     *
+     * @return array<string, array{permission?: string, type?: string}>
+     *                                                                  [
+     *                                                                  'plugin.vendor-plugin.status.{id}' => [
+     *                                                                  'permission' => 'vendor-plugin.status.read',
+     *                                                                  'type' => 'private',
+     *                                                                  ],
+     *                                                                  ]
+     */
+    public function getChannels(): array
+    {
+        return [];
+    }
+
+    /**
+     * 스케줄 작업 목록 반환
+     *
+     * 플러그인에서 등록하는 스케줄 작업 목록입니다.
+     * 코어에서 이 메서드를 호출하여 플러그인 스케줄러를 등록합니다.
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 스케줄 작업이 필요한 경우 오버라이드
+     *
+     * @return array 스케줄 작업 배열
+     *               [
+     *               [
+     *               'command' => 'artisan:command',
+     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
+     *               'description' => '작업 설명 (선택)',
+     *               'enabled_config' => 'setting.key' (선택, plugin_setting()으로 조회하여 활성화 여부 결정),
+     *               ],
+     *               ]
+     *
+     * enabled_config 형식:
+     *   - 'payment.auto_capture' → plugin_setting($identifier, 'payment.auto_capture')
+     *   - 'sirsoft-payment.payment.auto_capture' → identifier 접두사 자동 제거 후 동일하게 조회
+     */
+    public function getSchedules(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 등록할 IDV(본인인증) 정책 선언을 반환합니다.
+     *
+     * 반환된 정책은 `PluginManager` 가 activate/update 시
+     * `IdentityPolicySyncHelper::syncPolicy()` 로 DB(identity_policies) 에 동기화하며,
+     * deactivate/uninstall 시 `cleanupStalePolicies()` 로 정리합니다.
+     *
+     * `source_type` / `source_identifier` 는 Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     * 운영자가 관리자 UI 에서 수정한 필드(`enabled` / `grace_minutes` / `provider_id` / `fail_mode`)
+     * 는 `user_overrides` JSON 으로 보존됩니다.
+     *
+     * @return array<int, array{
+     *     key: string,
+     *     scope: string,
+     *     target: string,
+     *     purpose: string,
+     *     provider_id?: string|null,
+     *     grace_minutes?: int,
+     *     enabled?: bool,
+     *     priority?: int,
+     *     applies_to?: string,
+     *     fail_mode?: string,
+     *     conditions?: array<string, mixed>
+     * }>
+     */
+    public function getIdentityPolicies(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 등록할 IDV(본인인증) 목적(purpose) 선언을 반환합니다.
+     *
+     * DB 에 저장되지 않는 **코드 계약** 입니다. 활성화된 플러그인의 getter 결과를
+     * `IdentityVerificationManager` 가 부팅 시 런타임 레지스트리에 병합하며,
+     * `core.identity.purposes` filter 훅으로도 서드파티 동적 등록을 수용합니다.
+     *
+     * 새 purpose 는 이를 지원하는 Provider 와 challenge 로직이 함께 제공되어야 동작합니다.
+     * Provider 없이 purpose 만 선언하면 관리자 UI 에는 노출되나 실제 challenge 는 실패합니다.
+     *
+     * @return array<string, array{
+     *     label: string|array,
+     *     description?: string|array,
+     *     default_provider?: string|null,
+     *     allowed_channels?: string[]
+     * }>
+     */
+    public function getIdentityPurposes(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
+     *
+     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
+     * `PluginManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
+     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
+     * uninstall(deleteData=true) 시 자동 정리됩니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
+     *
+     * `extension_type='plugin'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     *
+     * 반환 형식: AbstractModule::getIdentityMessages() 와 동일.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getIdentityMessages(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 등록할 알림 정의/템플릿 선언을 반환합니다.
+     *
+     * `getIdentityMessages()` 와 동일한 패턴으로 `PluginManager` 가 activate/update 시
+     * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
+     * uninstall(deleteData=true) 시에도 자동 정리됩니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body/recipients 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
+     *
+     * `extension_type='plugin'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다 (포함되어 있으면 덮어씀).
+     *
+     * 반환 형식 예:
+     * ```php
+     * return [
+     *     [
+     *         'type' => 'plugin_event',
+     *         'hook_prefix' => 'sirsoft-payment',
+     *         'name' => ['ko' => '결제 알림', 'en' => 'Payment'],
+     *         'description' => ['ko' => '...', 'en' => '...'],
+     *         'channels' => ['mail', 'database'],
+     *         'hooks' => ['sirsoft-payment.after_charge'],
+     *         'variables' => [['key' => 'amount', 'description' => '결제 금액']],
+     *         'templates' => [
+     *             [
+     *                 'channel' => 'mail',
+     *                 'recipients' => [['type' => 'trigger_user']],
+     *                 'subject' => ['ko' => '...', 'en' => '...'],
+     *                 'body' => ['ko' => '...', 'en' => '...'],
+     *             ],
+     *         ],
+     *     ],
+     * ];
+     * ```
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getNotificationDefinitions(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 설치 시 실행할 시더 클래스 목록 반환
+     *
+     * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)
+     * 오버라이드하여 실행할 시더와 순서를 명시적으로 정의하세요.
+     *
+     * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
+     */
+    public function getSeeders(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 의존성 반환
+     *
+     * plugin.json 의 dependencies 필드를 반환합니다.
+     * 중첩 구조 형식: ['modules' => [identifier => version, ...], 'plugins' => [...]]
+     *
+     * 기본 구현은 manifest JSON 파싱 결과를 그대로 반환하므로 플러그인 개발자는
+     * plugin.json 에 의존성을 정의하면 되고 PHP 오버라이드는 권장하지 않습니다.
+     *
+     * @return array 중첩 구조 의존성 배열
+     */
+    public function getDependencies(): array
+    {
+        $dependencies = $this->loadManifest()['dependencies'] ?? [];
+
+        return is_array($dependencies) ? $dependencies : [];
+    }
+
+    /**
+     * GitHub URL 반환
+     *
+     * plugin.json의 github_url 필드에서 읽습니다. 오버라이드 가능합니다.
+     *
+     * @return string|null GitHub URL 또는 null
+     */
+    public function getGithubUrl(): ?string
+    {
+        return $this->loadManifest()['github_url'] ?? null;
+    }
+
+    /**
+     * 라이선스 반환
+     *
+     * plugin.json의 license 필드에서 읽습니다. 오버라이드 가능합니다.
+     *
+     * @return string|null 라이선스 또는 null
+     */
+    public function getLicense(): ?string
+    {
+        return $this->loadManifest()['license'] ?? null;
+    }
+
+    /**
+     * 관리자 UI 에서 숨김 여부 반환
+     *
+     * plugin.json 의 hidden 필드가 true 면 관리자 플러그인 목록(/api/admin/plugins) 에서 기본 제외됩니다.
+     * artisan CLI, 설치/제거, 업데이트 감지는 영향을 받지 않습니다.
+     * 학습용 샘플 플러그인, 내부 운영용 플러그인 등에 사용합니다.
+     *
+     * @return bool 숨김 여부 (기본값: false)
+     */
+    public function isHidden(): bool
+    {
+        return (bool) ($this->loadManifest()['hidden'] ?? false);
+    }
+
+    /**
+     * 플러그인 메타데이터 반환
+     *
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 메타데이터가 필요한 경우 오버라이드
+     *
+     * @return array 메타데이터 배열
+     */
+    public function getMetadata(): array
+    {
+        return [];
+    }
+
+    /**
+     * 레이아웃 확장 파일 경로 반환
+     *
+     * @return string extensions 디렉토리 경로
+     */
+    public function getExtensionsPath(): string
+    {
+        return $this->getPluginPath().'/resources/extensions';
+    }
+
+    /**
+     * 레이아웃 확장 파일 목록 반환
+     *
+     * @return array<string> JSON 파일 경로 목록
+     */
+    public function getLayoutExtensions(): array
+    {
+        $path = $this->getExtensionsPath();
+
+        if (! is_dir($path)) {
+            return [];
+        }
+
+        return glob($path.'/*.json') ?: [];
+    }
+
+    /**
+     * SEO config 파일 경로를 반환합니다.
+     *
+     * @return string seo-config.json 파일 경로
+     */
+    public function getSeoConfigPath(): string
+    {
+        return $this->getPluginPath().'/resources/seo-config.json';
+    }
+
+    /**
+     * SEO config를 로드하여 반환합니다.
+     *
+     * @return array SEO 설정 배열 (파일 미존재 시 빈 배열)
+     */
+    public function getSeoConfig(): array
+    {
+        $path = $this->getSeoConfigPath();
+
+        if (! file_exists($path)) {
+            return [];
+        }
+
+        $config = json_decode(file_get_contents($path), true);
+
+        return is_array($config) ? $config : [];
+    }
+
+    /**
+     * SEO 변수 메타데이터를 반환합니다.
+     *
+     * 플러그인이 SEO 렌더링에 제공하는 변수를 page_type별로 선언합니다.
+     * SeoRenderer가 이 메서드를 호출하여 변수를 수집하고 자동 해석합니다.
+     *
+     * 각 변수는 source 타입에 따라 해석 방식이 결정됩니다:
+     * - setting: 플러그인 환경설정 값 (엔진 자동 해석)
+     * - core_setting: 코어 설정 값 (엔진 자동 해석)
+     * - query: URL 쿼리 파라미터 (엔진 자동 해석)
+     * - route: 라우트 파라미터 (엔진 자동 해석)
+     * - data: 데이터소스 응답 필드 (템플릿 개발자가 vars에서 매핑)
+     *
+     * 기본적으로 빈 배열 반환.
+     * 플러그인 개발자가 SEO 변수가 필요한 경우 오버라이드하세요.
+     *
+     * @return array page_type별 변수 정의 배열
+     *               [
+     *               'product' => [
+     *               'product_name' => [
+     *               'description' => '상품명',
+     *               'source' => 'data',
+     *               'required' => true,
+     *               ],
+     *               'commerce_name' => [
+     *               'description' => '쇼핑몰명',
+     *               'source' => 'setting',
+     *               'key' => 'basic_info.shop_name',
+     *               ],
+     *               ],
+     *               ]
+     */
+    public function seoVariables(): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 OG 메타태그 기본값 선언
+     *
+     * 플러그인이 자기 도메인 데이터로부터 og:image, og:type 등 도메인별 OG 태그를
+     * 직접 만들어 제공합니다. 레이아웃 meta.seo.og 가 같은 키를 선언하면 그쪽이 우선.
+     *
+     * @param  string  $pageType  레이아웃 meta.seo.page_type
+     * @param  array  $context  컨텍스트 (DataSourceResolver 결과 + _seo)
+     * @param  array  $routeParams  라우트 파라미터
+     * @return array OG 데이터 (type, image, image_width, image_height, image_secure_url,
+     *               image_type, image_alt, site_name, locale, extra)
+     */
+    public function seoOgDefaults(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 Twitter 카드 기본값 선언
+     *
+     * @param  string  $pageType  페이지 타입
+     * @param  array  $context  컨텍스트
+     * @param  array  $routeParams  라우트 파라미터
+     * @return array Twitter 카드 데이터 (card, site, creator, title, description, image, image_alt, extra)
+     */
+    public function seoTwitterDefaults(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 JSON-LD 구조화 데이터 선언
+     *
+     * 플러그인이 자기 도메인 스키마(Schema.org @type) 를 직접 owned.
+     * 레이아웃 meta.seo.structured_data 가 비어있을 때 적용.
+     *
+     * @param  string  $pageType  페이지 타입
+     * @param  array  $context  컨텍스트
+     * @param  array  $routeParams  라우트 파라미터
+     * @return array Schema.org 형식 (@type 필수). 빈 배열 반환 시 미적용.
+     */
+    public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * 그누보드7 코어 요구 버전 제약 반환
+     *
+     * plugin.json의 g7_version 필드에서 읽습니다. 오버라이드 가능합니다.
+     * null 반환 시 버전 검증 건너뜀 (역호환성)
+     *
+     * @return string|null 버전 제약 문자열 또는 null
+     */
+    public function getRequiredCoreVersion(): ?string
+    {
+        return $this->loadManifest()['g7_version'] ?? null;
+    }
+
+    /**
+     * 플러그인 프론트엔드 에셋 정보 반환
+     *
+     * plugin.json의 assets 섹션에서 정보를 읽어 반환합니다.
+     * 빌드된 JS/CSS 파일 경로와 외부 스크립트 정보를 포함합니다.
+     *
+     * @return array 에셋 정보 배열
+     *               [
+     *               'js' => ['entry' => 'resources/js/index.ts', 'output' => 'dist/js/plugin.iife.js'],
+     *               'css' => ['entry' => 'resources/css/main.css', 'output' => 'dist/css/plugin.css'],
+     *               'handlers' => true,
+     *               'static' => 'resources/assets/',
+     *               'external' => [...],
+     *               ]
+     */
+    public function getAssets(): array
+    {
+        return $this->loadManifest()['assets'] ?? [];
+    }
+
+    /**
+     * 플러그인 에셋 로딩 설정 반환
+     *
+     * plugin.json의 loading 섹션에서 정보를 읽어 반환합니다.
+     *
+     * @return array 로딩 설정 배열
+     *               [
+     *               'strategy' => 'global' | 'layout' | 'lazy',
+     *               'priority' => 100,
+     *               'dependencies' => [],
+     *               ]
+     */
+    public function getAssetLoadingConfig(): array
+    {
+        $loading = $this->loadManifest()['loading'] ?? [];
+
+        return [
+            'strategy' => $loading['strategy'] ?? 'global',
+            'priority' => $loading['priority'] ?? 100,
+            'dependencies' => $loading['dependencies'] ?? [],
+        ];
+    }
+
+    /**
+     * 프론트엔드 에셋 빌드가 가능한지 확인합니다.
+     *
+     * hasAssets()와 달리 빌드 결과물이 아닌 소스 엔트리포인트 정의 여부로 판단합니다.
+     * 빌드 커맨드에서 빌드 대상 필터링에 사용됩니다.
+     *
+     * @return bool 빌드 가능 여부
+     */
+    public function canBuild(): bool
+    {
+        $assets = $this->getAssets();
+
+        return ! empty($assets['js']['entry']) || ! empty($assets['css']['entry']);
+    }
+
+    /**
+     * 플러그인에 프론트엔드 에셋이 있는지 확인
+     *
+     * @return bool 에셋 존재 여부
+     */
+    public function hasAssets(): bool
+    {
+        $assets = $this->getAssets();
+
+        // js 또는 css output이 정의되어 있고 파일이 존재하는지 확인
+        if (! empty($assets['js']['output'])) {
+            $jsPath = $this->getPluginPath().'/'.$assets['js']['output'];
+            if (file_exists($jsPath)) {
+                return true;
+            }
+        }
+
+        if (! empty($assets['css']['output'])) {
+            $cssPath = $this->getPluginPath().'/'.$assets['css']['output'];
+            if (file_exists($cssPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 빌드된 에셋 파일 경로 반환
+     *
+     * @return array 빌드된 에셋 경로 배열 ['js' => '...', 'css' => '...']
+     */
+    public function getBuiltAssetPaths(): array
+    {
+        $assets = $this->getAssets();
+        $result = [];
+
+        if (! empty($assets['js']['output'])) {
+            $jsPath = $this->getPluginPath().'/'.$assets['js']['output'];
+            if (file_exists($jsPath)) {
+                $result['js'] = $assets['js']['output'];
+            }
+        }
+
+        if (! empty($assets['css']['output'])) {
+            $cssPath = $this->getPluginPath().'/'.$assets['css']['output'];
+            if (file_exists($cssPath)) {
+                $result['css'] = $assets['css']['output'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
+     *
+     * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.
+     *
+     * @return bool 설정 페이지 존재 여부
+     */
+    public function hasSettings(): bool
+    {
+        return $this->getSettingsLayout() !== null;
+    }
+
+    /**
+     * 플러그인 설정 기본값 파일 경로를 반환합니다.
+     *
+     * config/settings/defaults.json 파일이 존재하면 해당 경로를 반환합니다.
+     *
+     * @return string|null defaults.json 파일 절대 경로 또는 null
+     */
+    public function getSettingsDefaultsPath(): ?string
+    {
+        $path = $this->getPluginPath().'/config/settings/defaults.json';
+
+        return file_exists($path) ? $path : null;
+    }
+
+    /**
+     * 플러그인 설정 페이지 레이아웃 경로를 반환합니다.
+     *
+     * 기본적으로 resources/layouts/admin/plugin_settings.json 경로를 반환합니다.
+     * 파일이 존재하지 않으면 null을 반환합니다.
+     * 플러그인 개발자가 커스텀 경로가 필요한 경우 오버라이드합니다.
+     *
+     * @return string|null 레이아웃 파일 절대 경로 또는 null
+     */
+    public function getSettingsLayout(): ?string
+    {
+        $layoutPath = $this->getPluginPath().'/resources/layouts/admin/plugin_settings.json';
+
+        return file_exists($layoutPath) ? $layoutPath : null;
+    }
+
+    /**
+     * 플러그인 설정 스키마를 반환합니다.
+     *
+     * 기본적으로 빈 배열 반환.
+     * 플러그인 개발자가 설정이 필요한 경우 오버라이드합니다.
+     *
+     * @return array 설정 스키마 배열
+     */
+    public function getSettingsSchema(): array
+    {
+        return [];
+    }
+
+    /**
+     * 플러그인 설정 페이지 라우트 경로를 반환합니다.
+     *
+     * 기본적으로 '/admin/plugins/{identifier}/settings' 형식을 반환합니다.
+     * 설정 레이아웃이 없으면 null을 반환합니다.
+     * 플러그인 개발자가 커스텀 경로가 필요한 경우 오버라이드합니다.
+     *
+     * @return string|null 설정 페이지 라우트 또는 null
+     */
+    public function getSettingsRoute(): ?string
+    {
+        if (! $this->hasSettings()) {
+            return null;
+        }
+
+        return '/admin/plugins/'.$this->getIdentifier().'/settings';
+    }
+
+    /**
+     * 플러그인 스토리지 드라이버 인스턴스 반환
+     *
+     * 플러그인별로 격리된 파일 저장소를 제공합니다.
+     * 카테고리별로 파일을 분리하여 저장합니다 (settings, data, temp).
+     *
+     * @return StorageInterface 스토리지 드라이버 인스턴스
+     */
+    public function getStorage(): StorageInterface
+    {
+        if ($this->storage === null) {
+            $this->storage = new PluginStorageDriver(
+                $this->getIdentifier(),
+                $this->getStorageDisk()
+            );
+        }
+
+        return $this->storage;
+    }
+
+    /**
+     * 플러그인에서 사용할 스토리지 디스크 이름 반환
+     *
+     * 기본값은 'plugins'이며, 플러그인 개발자가 다른 디스크를 사용하려면 오버라이드합니다.
+     * 예: config('plugin-name.disk', 'plugins')
+     *
+     * @return string 디스크 이름 (plugins, public, s3 등)
+     */
+    public function getStorageDisk(): string
+    {
+        return 'plugins';
+    }
+
+    /**
+     * 플러그인 캐시 드라이버 인스턴스 반환
+     *
+     * 플러그인별로 격리된 캐시를 제공합니다.
+     * 접두사 패턴: g7:plugin.{identifier}:{key}
+     *
+     * @return CacheInterface 캐시 드라이버 인스턴스
+     */
+    public function getCache(): CacheInterface
+    {
+        if ($this->cache === null) {
+            $this->cache = new PluginCacheDriver(
+                $this->getIdentifier(),
+                $this->getCacheStore()
+            );
+        }
+
+        return $this->cache;
+    }
+
+    /**
+     * 플러그인에서 사용할 캐시 스토어 이름 반환
+     *
+     * 기본값은 환경설정 캐시 드라이버이며, 플러그인 개발자가 다른 스토어를 사용하려면 오버라이드합니다.
+     *
+     * @return string 캐시 스토어 이름
+     */
+    public function getCacheStore(): string
+    {
+        return config('cache.default');
+    }
+
+    /**
+     * 카테고리별 스토리지 기본 경로 반환
+     *
+     * @param  string  $category  카테고리 (settings, data, temp)
+     * @return string 전체 파일 시스템 경로
+     */
+    public function getStorageBasePath(string $category): string
+    {
+        return $this->getStorage()->getBasePath($category);
+    }
+
+    /**
+     * 파일의 공개 URL 반환
+     *
+     * public disk인 경우 직접 URL을 반환하고,
+     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
+     *
+     * @param  string  $category  카테고리
+     * @param  string  $path  파일 경로
+     * @return string|null 파일 URL (private disk인 경우 null)
+     */
+    public function getStorageUrl(string $category, string $path): ?string
+    {
+        return $this->getStorage()->url($category, $path);
+    }
+}

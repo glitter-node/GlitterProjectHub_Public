@@ -1,0 +1,228 @@
+{
+  "version": "0.1.7",
+  "layout_name": "home",
+  "permissions": [],
+  "extends": "_user_base",
+  "meta": {
+    "seo": {
+      "enabled": true,
+      "data_sources": [
+        "stats",
+        "recent_posts",
+        "resource_posts",
+        "popular_boards"
+      ],
+      "priority": 1,
+      "changefreq": "daily",
+      "og": {
+        "type": "website",
+        "title": "$t:home.seo_title",
+        "description": "$t:home.seo_description",
+        "image": "https://hub.glitter.kr/static/og/glitter_projecthub_og_1200x630.png"
+      },
+      "twitter": {
+        "card": "summary_large_image",
+        "title": "$t:home.seo_title",
+        "description": "$t:home.seo_description",
+        "image": "https://hub.glitter.kr/static/og/glitter_projecthub_og_1200x630.png"
+      },
+      "structured_data": {
+        "@type": "WebSite",
+        "name": "{{_global.site_name ?? ''}}",
+        "url": "{{_global.site_url ?? ''}}"
+      }
+    }
+  },
+  "init_actions": [
+    {
+      "handler": "deferDataSources",
+      "params": {
+        "dataSourceIds": [
+          "resource_posts",
+          "popular_boards"
+        ],
+        "delayMs": 1600,
+        "staggerMs": 450,
+        "homeOnly": true,
+        "anonymousOnly": true
+      }
+    }
+  ],
+  "data_sources": [
+    {
+      "id": "stats",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/stats",
+      "method": "GET",
+      "auto_fetch": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "users": 0,
+          "posts": 0,
+          "comments": 0,
+          "boards": 0
+        }
+      }
+    },
+    {
+      "id": "recent_posts",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/posts/recent?limit=10",
+      "method": "GET",
+      "auto_fetch": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": []
+      }
+    },
+    {
+      "id": "resource_posts",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/resources/posts?limit=4",
+      "method": "GET",
+      "auto_fetch": true,
+      "if": "{{!(window.location.hostname === 'hub.glitter.kr' && window.location.pathname === '/' && !localStorage.getItem('auth_token'))}}",
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": {
+          "data": []
+        }
+      }
+    },
+    {
+      "id": "popular_boards",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/popular-boards?limit=6",
+      "method": "GET",
+      "auto_fetch": true,
+      "if": "{{!(window.location.hostname === 'hub.glitter.kr' && window.location.pathname === '/' && !localStorage.getItem('auth_token'))}}",
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": []
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "py-3 px-4"
+        },
+        "responsive": {
+          "tablet": {
+            "props": {
+              "className": "py-3 px-6"
+            }
+          },
+          "desktop": {
+            "props": {
+              "className": "py-4 px-8"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-3"
+            },
+            "children": [
+              {
+                "partial": "partials/home/_welcome_card.json"
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-3 -mx-4 overflow-hidden rounded-lg border border-teal-200/60 bg-white/90 p-2.5 shadow-none dark:border-teal-900/55 dark:bg-slate-900/75 sm:-mx-6 lg:-mx-8"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "grid grid-cols-1 gap-2"
+                },
+                "children": [
+                  {
+                    "partial": "partials/home/_activity_compact.json"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-3 -mx-4 overflow-hidden rounded-lg border border-slate-200/45 bg-white/60 p-2 dark:border-slate-800/75 dark:bg-slate-900/35 sm:-mx-6 lg:-mx-8"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "grid grid-cols-1 gap-2.5"
+                },
+                "children": [
+                  {
+                    "partial": "partials/home/_discovery_grid.json"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "grid grid-cols-1 gap-2.5"
+                    },
+                    "responsive": {
+                      "desktop": {
+                        "props": {
+                          "className": "grid grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] gap-2.5"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "partial": "partials/home/_archive_highlights.json"
+                      },
+                      {
+                        "partial": "partials/home/_recommended_spaces.json"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-1 -mx-4 overflow-hidden border-t border-slate-200/35 bg-transparent pt-2 dark:border-slate-700/70 sm:-mx-6 lg:-mx-8"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "grid grid-cols-1 gap-2"
+                },
+                "children": [
+                  {
+                    "partial": "partials/home/_community_entry_strip.json"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Button",
+  "props": {
+    "disabled": "{{_global.currentUser?.uuid && posts?.data?.abilities?.can_write !== true}}",
+    "className": "inline-flex items-center gap-2 px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+  },
+  "actions": [
+    {
+      "type": "click",
+      "handler": "switch",
+      "params": {
+        "value": "{{posts?.data?.abilities?.can_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}"
+      },
+      "cases": {
+        "allowed": {
+          "handler": "navigate",
+          "params": {
+            "path": "/board/{{route.slug}}/write"
+          }
+        },
+        "no_permission": {
+          "handler": "toast",
+          "params": {
+            "type": "warning",
+            "message": "$t:board.no_write_permission"
+          }
+        },
+        "not_logged_in": {
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "toast",
+              "params": {
+                "type": "info",
+                "message": "$t:board.login_required_to_write"
+              }
+            },
+            {
+              "handler": "navigate",
+              "params": {
+                "path": "/login",
+                "query": {
+                  "redirect": "/board/{{route.slug}}/write"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "children": [
+    {
+      "type": "basic",
+      "name": "Icon",
+      "props": {
+        "name": "pencil",
+        "size": "sm"
+      }
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "text": "$t:board.write"
+    }
+  ]
+}

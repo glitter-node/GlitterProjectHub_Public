@@ -1,0 +1,18 @@
+{
+  "admin": {
+    "index": {
+      "title": "Sample",
+      "description": "Sample item list.",
+      "create_button": "Create item",
+      "pagination_info": "{{total}} items",
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "status": "Status",
+        "created_at": "Created At",
+        "actions": "Actions",
+        "edit": "Edit"
+      }
+    }
+  }
+}

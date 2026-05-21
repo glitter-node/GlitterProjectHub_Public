@@ -1,0 +1,243 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.slug && query.page && Number(query.page) > 1 && posts?.data?.data?.length === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-14 px-4 text-center bg-slate-50/80 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "files",
+            "size": "3x",
+            "className": "mb-4 text-slate-300 dark:text-slate-600"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400 mb-2"
+          },
+          "text": "$t:board.no_posts_on_page"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer mt-4"
+          },
+          "text": "$t:board.go_to_first_page",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.slug && !query.search && !query.category && (!query.page || Number(query.page) <= 1) && (posts?.data?.data ?? []).length === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-14 px-4 text-center bg-slate-50/80 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "clipboard-check",
+            "size": "3x",
+            "className": "mb-4 text-teal-400 dark:text-teal-500"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{posts?.data?.board?.slug === 'free'}}",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400 mb-6"
+          },
+          "text": "$t:board.empty.free.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{posts?.data?.board?.slug === 'qna'}}",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400 mb-6"
+          },
+          "text": "$t:board.empty.qna.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{!['free','qna'].includes(posts?.data?.board?.slug ?? '')}}",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400"
+          },
+          "text": "$t:board.no_posts"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{posts?.data?.board?.slug === 'free'}}",
+          "props": {
+            "type": "button",
+            "className": "inline-flex items-center gap-2 px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 font-medium transition-colors cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "switch",
+              "params": {
+                "value": "{{_global.currentUser?.uuid ? 'authenticated' : 'guest'}}"
+              },
+              "cases": {
+                "authenticated": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/free/write"
+                  }
+                },
+                "guest": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/login",
+                    "query": {
+                      "redirect": "/board/free/write"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "pencil",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.empty.free.cta"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{posts?.data?.board?.slug === 'qna'}}",
+          "props": {
+            "type": "button",
+            "className": "inline-flex items-center gap-2 px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 font-medium transition-colors cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "switch",
+              "params": {
+                "value": "{{_global.currentUser?.uuid ? 'authenticated' : 'guest'}}"
+              },
+              "cases": {
+                "authenticated": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/qna/write"
+                  }
+                },
+                "guest": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/login",
+                    "query": {
+                      "redirect": "/board/qna/write"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "question-circle",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.empty.qna.cta"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.slug && (query.search || query.category) && posts?.data?.pagination?.total === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-14 px-4 text-center bg-slate-50/80 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "search-check",
+            "size": "3x",
+            "className": "mb-4 text-slate-300 dark:text-slate-600"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400 mb-6"
+          },
+          "text": "$t:board.no_search_results"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer"
+          },
+          "text": "$t:board.clear_search",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

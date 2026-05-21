@@ -1,0 +1,166 @@
+{
+  "identifier": "glitter-project_hub",
+  "vendor": "Glitter.kr",
+  "name": {
+    "ko": "글리터 프로젝트 허브",
+    "en": "Glitter Project Hub"
+  },
+  "version": "0.1.34",
+  "license": "MIT",
+  "description": {
+    "ko": "프로젝트 생태계, 인프라 협업, 운영 지식 공유를 하나의 허브로 구성하는 독립 플랫폼 인터페이스",
+    "en": "An independent platform interface for project ecosystems, infrastructure collaboration, and operational knowledge sharing"
+  },
+  "type": "user",
+  "locales": [
+    "ko",
+    "en"
+  ],
+  "author": {
+    "name": "Glitter.kr",
+    "email": "admin@glitter.kr",
+    "url": "https://glitter.kr"
+  },
+  "release_date": "2026-05-20",
+  "g7_version": ">=7.0.0-beta.7",
+  "dependencies": {
+    "modules": {
+      "sirsoft-board": ">=1.0.0-beta.5",
+      "sirsoft-page": ">=1.0.0-beta.3"
+    },
+    "plugins": {
+      "sirsoft-daum_postcode": ">=1.0.0-beta.2"
+    }
+  },
+  "assets": {
+    "css": [
+      "dist/css/components.css"
+    ],
+    "js": [
+      "dist/js/components.iife.js"
+    ],
+    "fonts": [],
+    "images": []
+  },
+  "head": {
+    "icons": [
+      {
+        "rel": "icon",
+        "type": "image/svg+xml",
+        "href": "/static/gimg/favicon/glitter_circle-512.svg"
+      },
+      {
+        "rel": "icon",
+        "type": "image/png",
+        "sizes": "32x32",
+        "href": "/static/gimg/favicon/favicon-32.png"
+      },
+      {
+        "rel": "icon",
+        "type": "image/png",
+        "sizes": "192x192",
+        "href": "/static/gimg/favicon/favicon-192.png"
+      },
+      {
+        "rel": "icon",
+        "type": "image/png",
+        "sizes": "512x512",
+        "href": "/static/gimg/favicon/favicon-512.png"
+      }
+    ],
+    "apple_touch_icon": {
+      "sizes": "152x152",
+      "href": "/static/gimg/favicon/favicon-152.png"
+    },
+    "manifest": "/static/gimg/favicon/hub_kr-site.webmanifest",
+    "theme_color": "#405862"
+  },
+  "components": {
+    "basic": [
+      "a",
+      "badge",
+      "button",
+      "checkbox",
+      "div",
+      "form",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "hr",
+      "icon",
+      "img",
+      "input",
+      "label",
+      "li",
+      "nav",
+      "p",
+      "section",
+      "select",
+      "span",
+      "svg",
+      "table",
+      "tbody",
+      "td",
+      "textarea",
+      "th",
+      "thead",
+      "tr",
+      "ul"
+    ],
+    "composite": [
+      "header",
+      "footer",
+      "mobile-nav",
+      "rich-text-editor",
+      "image-gallery",
+      "quantity-selector",
+      "post-reactions",
+      "social-login-buttons",
+      "file-uploader",
+      "card",
+      "modal",
+      "toast",
+      "pagination",
+      "stat-card",
+      "status-badge",
+      "tab-navigation",
+      "empty-state",
+      "loading-spinner",
+      "breadcrumb",
+      "search-bar",
+      "dropdown"
+    ],
+    "layout": [
+      "container",
+      "flex",
+      "grid",
+      "section"
+    ]
+  },
+  "preview": {
+    "thumbnail": "preview/thumbnail.png",
+    "screenshots": [
+      "preview/screenshot1.png",
+      "preview/screenshot2.png"
+    ]
+  },
+  "error_config": {
+    "layouts": {
+      "401": "401",
+      "403": "403",
+      "404": "404",
+      "500": "500",
+      "503": "503",
+      "maintenance": "maintenance"
+    }
+  },
+  "features": {
+    "dark_mode": true,
+    "responsive": true,
+    "multi_language": true,
+    "multi_currency": false
+  },
+  "github_url": "https://github.com/glitter-gim/GlitterProjectHub",
+  "github_changelog_url": "https://github.com/glitter-gim/GlitterProjectHub/blob/main/templates/_bundled/glitter-project_hub/CHANGELOG.md"
+}

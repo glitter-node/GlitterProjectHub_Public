@@ -1,0 +1,1089 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "post"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-slate-800 rounded-lg shadow"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "p-6 pb-2 border-b border-slate-200 dark:border-slate-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mb-3 flex items-center flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{post?.data?.category || post?.data?.is_notice || post?.data?.is_secret || post?.data?.status === 'blinded'}}",
+                  "props": {
+                    "className": "flex items-center gap-3 flex-shrink-0 mr-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.is_notice}}",
+                      "props": {
+                        "className": "px-2 py-1 text-xs font-bold bg-teal-600 text-white dark:bg-teal-500 rounded"
+                      },
+                      "text": "$t:board.notice"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.category}}",
+                      "props": {
+                        "className": "px-2 py-1 text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded"
+                      },
+                      "text": "{{post.data.category}}"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "if": "{{post?.data?.is_secret}}",
+                      "props": {
+                        "name": "lock",
+                        "size": "sm",
+                        "className": "text-slate-500 dark:text-slate-400 flex-shrink-0"
+                      }
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "if": "{{post?.data?.status === 'blinded'}}",
+                      "props": {
+                        "name": "eye-slash",
+                        "size": "sm",
+                        "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H1",
+                      "props": {
+                        "className": "text-2xl font-bold text-slate-900 dark:text-white"
+                      },
+                      "text": "{{post?.data?.title ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.deleted_at}}",
+                      "props": {
+                        "className": "inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0"
+                      },
+                      "text": "$t:board.post.deleted_badge"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.is_new}}",
+                      "props": {
+                        "className": "px-2 py-1 text-xs font-bold bg-red-500 text-white rounded flex-shrink-0"
+                      },
+                      "text": "$t:board.new_badge_short"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Avatar",
+                      "props": {
+                        "author": "{{post?.data?.author}}",
+                        "size": "md"
+                      }
+                    },
+                    {
+                      "type": "composite",
+                      "name": "UserInfo",
+                      "props": {
+                        "author": "{{post?.data?.author}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "title": "{{post?.data?.created_at ?? ''}}"
+                      },
+                      "text": "{{post?.data?.created_at_formatted ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.board?.show_view_count !== false && post?.data?.view_count !== undefined}}",
+                      "props": {
+                        "className": "flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "eye",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{post.data.view_count}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.board?.use_comment && post?.data?.comment_count !== undefined}}",
+                      "props": {
+                        "className": "flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "comment-dots",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{post.data.comment_count}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "if": "{{post?.data?.status !== 'blinded' && post?.data?.content !== null}}",
+          "partial": "partials/board/show/_post_attachments.json"
+        },
+        {
+          "if": "{{post?.data?.parent}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mx-6 mt-4 p-4 bg-slate-50 dark:bg-slate-700/50 border-l-4 border-slate-400 dark:border-slate-500 rounded-r-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between mb-2 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "comment-dots",
+                        "size": "sm",
+                        "className": "text-slate-500 dark:text-slate-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-semibold text-slate-700 dark:text-slate-300"
+                      },
+                      "text": "$t:board.parent_post"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-slate-500 dark:text-slate-400"
+                      },
+                      "text": "{{post?.data?.parent?.author?.name ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-slate-400 dark:text-slate-500",
+                        "title": "{{post?.data?.parent?.created_at ?? ''}}"
+                      },
+                      "text": "{{post?.data?.parent?.created_at_formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 mb-2"
+              },
+              "children": [
+                {
+                  "if": "{{post?.data?.parent?.is_secret}}",
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "sm",
+                    "className": "text-slate-500 dark:text-slate-400"
+                  }
+                },
+                {
+                  "if": "{{post?.data?.parent?.category}}",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                  },
+                  "text": "{{post?.data?.parent?.category ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}",
+                    "className": "font-bold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                  },
+                  "text": "{{post?.data?.parent?.title ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{post?.data?.parent?.deleted_at}}",
+                  "props": {
+                    "className": "inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0"
+                  },
+                  "text": "$t:board.post.deleted_badge"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm text-slate-600 dark:text-slate-400 mb-3 {{_local?.parentContentExpanded ? '' : 'line-clamp-2'}}"
+              },
+              "children": [
+                {
+                  "if": "{{post?.data?.parent?.status === 'blinded'}}",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "italic text-orange-500 dark:text-orange-400"
+                  },
+                  "text": "$t:board.blinded_post"
+                },
+                {
+                  "if": "{{post?.data?.parent?.status !== 'blinded' && post?.data?.parent?.is_secret && post?.data?.parent?.content === null}}",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-slate-500 dark:text-slate-400 italic"
+                  },
+                  "text": "$t:board.posts.detail.reply_secret_content"
+                },
+                {
+                  "id": "parent_post_html_content",
+                  "type": "extension_point",
+                  "name": "html_content",
+                  "if": "{{post?.data?.parent?.status !== 'blinded' && !(post?.data?.parent?.is_secret && post?.data?.parent?.content === null)}}",
+                  "props": {
+                    "content": "{{post?.data?.parent?.content ?? ''}}",
+                    "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
+                    "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{post?.data?.parent?.content ?? ''}}",
+                        "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
+                        "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.parent?.status !== 'blinded' && (post?.data?.parent?.content ?? '').length > 200}}",
+              "props": {
+                "className": "flex justify-start"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "parentContentExpanded": "{{!_local?.parentContentExpanded}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "{{_local?.parentContentExpanded ? 'chevron-up' : 'chevron-down'}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_local?.parentContentExpanded ? '$t:board.show_less' : '$t:board.show_more'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "p-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.status === 'blinded'}}",
+              "props": {
+                "className": "text-center py-12 bg-slate-50 dark:bg-slate-900/30 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "eye-slash",
+                        "size": "2x"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2"
+                      },
+                      "text": "$t:board.blinded_post"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{post?.data?.trigger_type}}",
+                  "props": {
+                    "className": "mt-3 text-sm text-slate-600 dark:text-slate-400 font-medium"
+                  },
+                  "text": "$t:board.blinded_reason.{{post?.data?.trigger_type}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{post?.data?.content}}",
+                  "props": {
+                    "className": "mt-4 px-4 py-2 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors flex items-center gap-2 mx-auto cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "showBlindedPostContent": "{{!_local?.showBlindedPostContent}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "{{_local?.showBlindedPostContent ? 'eye-slash' : 'eye'}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_local?.showBlindedPostContent ? '$t:board.hide_original' : '$t:board.view_original'}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.status === 'blinded' && _local?.showBlindedPostContent && post?.data?.content}}",
+              "props": {
+                "className": "mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 mb-3 pb-2 border-b border-slate-200 dark:border-slate-700"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "file-lines",
+                        "size": "sm",
+                        "className": "text-slate-500 dark:text-slate-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-slate-700 dark:text-slate-300"
+                      },
+                      "text": "$t:board.original_content"
+                    }
+                  ]
+                },
+                {
+                  "type": "extension_point",
+                  "name": "html_content",
+                  "props": {
+                    "content": "{{post?.data?.content ?? ''}}",
+                    "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                    "className": "prose dark:prose-invert max-w-none"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{post?.data?.content ?? ''}}",
+                        "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                        "className": "prose dark:prose-invert max-w-none"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.content === null && !post?.data?.is_guest_post && !_global.currentUser?.uuid && post?.data?.status !== 'blinded'}}",
+              "props": {
+                "className": "text-center py-12"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "3x",
+                    "className": "mx-auto text-slate-400 dark:text-slate-500 mb-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-slate-600 dark:text-slate-400 mb-6"
+                  },
+                  "text": "$t:board.secret_post_login_required"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "px-6 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-700 dark:hover:bg-teal-600 cursor-pointer"
+                  },
+                  "text": "$t:common.login",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/login",
+                        "query": {
+                          "redirect": "{{_global.currentPath}}"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.content === null && !post?.data?.is_guest_post && _global.currentUser?.uuid && post?.data?.status !== 'blinded'}}",
+              "props": {
+                "className": "text-center py-12"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "3x",
+                    "className": "mx-auto text-slate-400 dark:text-slate-500 mb-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-slate-600 dark:text-slate-400"
+                  },
+                  "text": "$t:board.secret_post_no_permission"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{post?.data?.content === null && post?.data?.is_guest_post && post?.data?.status !== 'blinded'}}",
+              "props": {
+                "className": "text-center py-12"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "3x",
+                    "className": "mx-auto text-slate-400 dark:text-slate-500 mb-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-slate-600 dark:text-slate-400 mb-6"
+                  },
+                  "text": "$t:board.secret_post_locked"
+                },
+                {
+                  "type": "basic",
+                  "name": "Form",
+                  "dataKey": "secretPasswordForm",
+                  "props": {
+                    "id": "secretPasswordForm",
+                    "className": "max-w-md mx-auto"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "password",
+                            "name": "password",
+                            "placeholder": "$t:board.form.password_placeholder",
+                            "className": "flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent",
+                            "value": "{{_local.secretPasswordForm?.password ?? ''}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "secretPasswordForm": {
+                                  "password": "{{$event.target.value}}"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "submit",
+                            "className": "px-6 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-700 dark:hover:bg-teal-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_local?.isVerifyingPassword}}"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "if": "{{_local?.isVerifyingPassword}}",
+                              "props": {
+                                "name": "spinner",
+                                "size": "sm",
+                                "className": "animate-spin mr-2"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{_local?.isVerifyingPassword ? '$t:common.confirming' : '$t:common.confirm'}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "submit",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isVerifyingPassword": true
+                      }
+                    },
+                    {
+                      "type": "submit",
+                      "handler": "apiCall",
+                      "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-password",
+                      "auth_mode": "optional",
+                      "params": {
+                        "method": "POST",
+                        "body": "{{_local?.secretPasswordForm}}"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "updateDataSource",
+                          "params": {
+                            "dataSourceId": "post",
+                            "data": "{{result}}"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isVerifyingPassword": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:board.password_verified"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isVerifyingPassword": false,
+                            "secretPasswordForm": {
+                              "password": ""
+                            }
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "extension_point",
+              "name": "html_content",
+              "if": "{{post?.data?.status !== 'blinded' && post?.data?.content !== null}}",
+              "props": {
+                "content": "{{post?.data?.content ?? ''}}",
+                "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                "className": "prose dark:prose-invert max-w-none mb-6"
+              },
+              "default": [
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{post?.data?.content ?? ''}}",
+                    "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                    "className": "prose dark:prose-invert max-w-none mb-6"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
+          "props": {
+            "className": "flex justify-end gap-2 px-6 py-4 border-t border-slate-200 dark:border-slate-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+              "props": {
+                "className": "px-4 py-2 text-sm border border-teal-300 dark:border-teal-600 text-teal-600 dark:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors flex items-center gap-1 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/{{route.slug}}/write?parent_id={{route.id}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "reply",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.post.reply"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !post?.data?.is_author && post?.data?.status !== 'blinded' && (!post?.data?.is_secret || post?.data?.content !== null) && !post?.data?.is_already_reported}}",
+              "props": {
+                "className": "px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "reportModal": {
+                          "type": "post",
+                          "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/reports"
+                        }
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "reportForm": {
+                          "reason_type": "",
+                          "reason_detail": ""
+                        }
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "board_report_modal"
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "flag",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.post.report"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !post?.data?.is_author && post?.data?.status !== 'blinded' && (!post?.data?.is_secret || post?.data?.content !== null) && post?.data?.is_already_reported}}",
+              "props": {
+                "disabled": true,
+                "className": "px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "flag",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.post.reported"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!post?.data?.deleted_at && ((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}",
+              "props": {
+                "className": "px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/{{route.slug}}/{{route.id}}/edit"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "pencil",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.edit"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!post?.data?.deleted_at && ((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}",
+              "props": {
+                "className": "px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "deleteModal": {
+                          "type": "post",
+                          "isGuest": "{{post?.data?.is_guest_post && !post?.data?.abilities?.can_manage}}",
+                          "password": "",
+                          "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}"
+                        }
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "board_delete_modal"
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "trash",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.delete"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "if": "{{post?.data?.board?.use_comment && !post?.data?.abilities?.can_read_comments && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-6 bg-white dark:bg-slate-800 rounded-lg shadow"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "px-6 py-8 text-center"
+          },
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "lock",
+                "size": "xl",
+                "className": "mx-auto text-slate-300 dark:text-slate-600 mb-3"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-slate-500 dark:text-slate-400"
+              },
+              "text": "$t:board.no_comment_read_permission"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "if": "{{post?.data?.board?.use_comment && post?.data?.abilities?.can_read_comments && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-6"
+      },
+      "children": [
+        {
+          "partial": "partials/board/show/_comment_section.json"
+        }
+      ]
+    },
+    {
+      "if": "{{(post?.data?.replies ?? []).length > 0 && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-6"
+      },
+      "children": [
+        {
+          "partial": "partials/board/show/_reply_section.json"
+        }
+      ]
+    }
+  ]
+}

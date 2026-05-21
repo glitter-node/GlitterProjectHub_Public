@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(popularPosts.data ?? []).length === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-16 text-center"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "inbox",
+            "size": "4x",
+            "className": "text-slate-300 dark:text-slate-600 mb-4"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-600 dark:text-slate-400 text-lg font-medium mb-2"
+          },
+          "text": "$t:board.popular.no_posts"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-slate-500 dark:text-slate-500"
+          },
+          "text": "$t:board.popular.no_posts_description"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(popularPosts.data ?? []).length > 0}}",
+      "iteration": {
+        "source": "{{popularPosts.data ?? []}}",
+        "item_var": "post",
+        "index_var": "index"
+      },
+      "children": [
+        {
+          "partial": "partials/board/popular/_popular_item.json"
+        }
+      ]
+    }
+  ]
+}

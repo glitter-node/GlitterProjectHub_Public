@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{query?.q}}",
+  "props": {
+    "className": "flex flex-wrap gap-2 mb-4"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "{{(_global.searchActiveTab ?? 'all') === 'all' ? 'px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full'}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "grid",
+            "size": "sm",
+            "className": "mr-1.5 inline"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:search.tabs.all"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "ml-1.5 {{(_global.searchActiveTab ?? 'all') === 'all' ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}}"
+          },
+          "text": "{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}"
+        }
+      ],
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "searchActiveTab": "all",
+                "searchBoardFilter": "",
+                "searchPage": 1
+              }
+            },
+            {
+              "handler": "refetchDataSource",
+              "params": {
+                "dataSourceId": "searchResults"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "{{_global.searchActiveTab === 'posts' ? 'px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full'}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "file-text",
+            "size": "sm",
+            "className": "mr-1.5 inline"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:search.tabs.posts"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "ml-1.5 {{_global.searchActiveTab === 'posts' ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}}"
+          },
+          "text": "{{(searchResults.data.posts_count ?? 0) | number}}"
+        }
+      ],
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "searchActiveTab": "posts",
+                "searchBoardFilter": "",
+                "searchPage": 1
+              }
+            },
+            {
+              "handler": "refetchDataSource",
+              "params": {
+                "dataSourceId": "searchResults"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "{{_global.searchActiveTab === 'pages' ? 'px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full'}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "file-alt",
+            "size": "sm",
+            "className": "mr-1.5 inline"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:search.tabs.pages"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "ml-1.5 {{_global.searchActiveTab === 'pages' ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}}"
+          },
+          "text": "{{(searchResults.data.pages_count ?? 0) | number}}"
+        }
+      ],
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "searchActiveTab": "pages",
+                "searchPage": 1
+              }
+            },
+            {
+              "handler": "refetchDataSource",
+              "params": {
+                "dataSourceId": "searchResults"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

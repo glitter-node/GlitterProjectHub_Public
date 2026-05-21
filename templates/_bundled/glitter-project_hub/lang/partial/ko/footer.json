@@ -1,0 +1,31 @@
+{
+  "project_name": "Glitter Project Hub",
+  "description": "프로젝트 커뮤니티와 운영 지식이 조용히 모이고 이어지는 협업 허브입니다.",
+  "copyright": "Copyright 1977. 광휘(Glitter) · Business Registration No. 392-04-03369 · Mail Order Business 2024-광주광산-1320 · Address: 106, Sochon-ro 152beon-gil, Gwangsan-gu, Gwangju, Republic of Korea · Personal Information Manager Glitter Gim · admin@glitter.kr · All rights reserved.",
+  "tagline": "협업 커뮤니티를 위한 지식 플랫폼",
+  "legal": {
+    "business_registration": "Business Registration No. 392-04-03369",
+    "mail_order_business": "Mail Order Business 2024-광주광산-1320",
+    "address": "Address: 106, Sochon-ro 152beon-gil, Gwangsan-gu, Gwangju, Republic of Korea",
+    "personal_information_manager": "Personal Information Manager Glitter Gim",
+    "email": "admin@glitter.kr",
+    "rights": "All rights reserved."
+  },
+  "community": "커뮤니티",
+  "info": "안내",
+  "project": "프로젝트",
+  "participation": "참여",
+  "policy": "정책",
+  "all_boards": "전체 공간",
+  "about": "허브 소개",
+  "faq": "이용 안내",
+  "archive": "프로젝트 아카이브",
+  "knowledge": "지식 공유",
+  "qna": "질문과 답변",
+  "introductions": "소개와 연결",
+  "support": "운영 지원",
+  "contact": "문의",
+  "terms": "이용약관",
+  "privacy": "개인정보처리방침",
+  "refund": "커뮤니티 정책"
+}

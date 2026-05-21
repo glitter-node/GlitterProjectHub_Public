@@ -1,0 +1,313 @@
+{
+  "version": "0.1.0",
+  "layout_name": "board/boards",
+  "permissions": [],
+  "extends": "_user_base",
+  "meta": {
+    "seo": {
+      "enabled": true,
+      "extensions": [
+        {
+          "type": "module",
+          "id": "sirsoft-board"
+        }
+      ],
+      "data_sources": [
+        "boardList"
+      ],
+      "page_type": "boards",
+      "toggle_setting": "$module_settings:sirsoft-board:seo.seo_boards",
+      "vars": {
+        "site_name": "$core_settings:general.site_name"
+      },
+      "priority": 0.5,
+      "changefreq": "weekly",
+      "og": {
+        "type": "website"
+      },
+      "structured_data": {
+        "@type": "ItemList"
+      }
+    }
+  },
+  "data_sources": [
+    {
+      "id": "boardList",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_mode": "optional",
+      "refetchOnMount": true,
+      "errorHandling": {
+        "403": {
+          "handler": "showErrorPage",
+          "params": {
+            "target": "content"
+          }
+        }
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "py-8"
+        },
+        "responsive": {
+          "portable": {
+            "props": {
+              "className": "py-4"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-6"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "mb-4"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex items-center gap-2 mb-2"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "table-cells-large",
+                      "size": "xl",
+                      "className": "text-slate-900 dark:text-white"
+                    },
+                    "responsive": {
+                      "portable": {
+                        "props": {
+                          "name": "table-cells-large",
+                          "size": "lg",
+                          "className": "text-slate-900 dark:text-white"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "text-2xl font-bold text-slate-900 dark:text-white"
+                    },
+                    "text": "$t:board.all_boards.title",
+                    "responsive": {
+                      "portable": {
+                        "props": {
+                          "className": "text-xl font-bold text-slate-900 dark:text-white"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "text-slate-600 dark:text-slate-400"
+                },
+                "text": "$t:board.all_boards.description"
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-6 rounded-lg border border-teal-200 bg-teal-50 p-5 dark:border-teal-800 dark:bg-teal-950/30"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "mb-5 rounded-lg border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-950/30"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex flex-wrap items-center justify-between gap-4"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "min-w-0"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "text-sm font-semibold text-teal-800 dark:text-teal-200"
+                        },
+                        "text": "$t:board.directory.first_question_label"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "mt-1 text-sm text-teal-700 dark:text-teal-300"
+                        },
+                        "text": "$t:board.directory.first_question_description"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "type": "button",
+                      "className": "inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 dark:bg-teal-500 dark:text-slate-950 dark:hover:bg-teal-400"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/board/qna/write"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                          "name": "question-circle",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:board.directory.ask_question"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{boardList.loading && !boardList.data}}",
+            "props": {
+              "className": "rounded-lg border border-slate-200 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-800"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Icon",
+                "props": {
+                  "name": "loader-circle",
+                  "size": "2x",
+                  "className": "mx-auto mb-3 text-slate-400"
+                }
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "text-sm text-slate-600 dark:text-slate-400"
+                },
+                "text": "$t:board.directory.loading"
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!boardList.loading && (boardList.data ?? []).length > 0}}",
+            "props": {
+              "className": "grid grid-cols-2 gap-4"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "grid grid-cols-1 gap-3"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "iteration": {
+                  "source": "{{boardList.data ?? []}}",
+                  "item_var": "board",
+                  "index_var": "index"
+                },
+                "children": [
+                  {
+                    "partial": "partials/board/boards/_board_card.json"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!boardList.loading && (boardList.data ?? []).length === 0}}",
+            "props": {
+              "className": "rounded-lg border border-slate-200 bg-white py-12 text-center dark:border-slate-700 dark:bg-slate-800"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Icon",
+                "props": {
+                  "name": "inbox",
+                  "size": "3x",
+                  "className": "text-slate-400 dark:text-slate-500 mx-auto mb-4"
+                }
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "font-medium text-slate-700 dark:text-slate-200"
+                },
+                "text": "$t:board.all_boards.empty"
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "mt-1 text-sm text-slate-500 dark:text-slate-400"
+                },
+                "text": "$t:board.directory.empty_description"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

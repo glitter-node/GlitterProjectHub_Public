@@ -1,0 +1,132 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{query?.q && searchResults?.data}}",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.searchActiveTab ?? 'all') === 'all' && (searchResults?.data?.total ?? 0) > 0}}",
+      "props": {
+        "className": "space-y-6"
+      },
+      "children": [
+        {
+          "partial": "partials/search/posts/_section.json"
+        },
+        {
+          "partial": "partials/search/pages/_section.json"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) > 0}}",
+      "children": [
+        {
+          "partial": "partials/search/posts/_list.json"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0}}",
+      "props": {
+        "className": "py-16 text-center"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mb-5 text-slate-300 dark:text-slate-600"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "file-text",
+                "size": "4x"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-medium text-slate-900 dark:text-white mb-2"
+          },
+          "text": "$t:search.empty.posts"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:search.empty.suggestion"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) > 0}}",
+      "children": [
+        {
+          "partial": "partials/search/pages/_section.json"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0}}",
+      "props": {
+        "className": "py-16 text-center"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mb-5 text-slate-300 dark:text-slate-600"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "file-alt",
+                "size": "4x"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-medium text-slate-900 dark:text-white mb-2"
+          },
+          "text": "$t:search.empty.pages"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:search.empty.suggestion"
+        }
+      ]
+    }
+  ]
+}

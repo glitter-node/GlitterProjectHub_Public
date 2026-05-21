@@ -1,0 +1,10 @@
+{
+  "policy": {
+    "source_type": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "admin": "Admin"
+    }
+  }
+}

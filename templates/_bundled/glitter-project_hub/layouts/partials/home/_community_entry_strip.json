@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "rounded-md border border-slate-200/45 bg-white/45 p-2 dark:border-slate-800/60 dark:bg-slate-900/20"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "grid grid-cols-1 gap-1.5"
+      },
+      "responsive": {
+        "tablet": {
+          "props": {
+            "className": "grid grid-cols-2 gap-1.5"
+          }
+        },
+        "desktop": {
+          "props": {
+            "className": "grid grid-cols-4 gap-1.5"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-slate-200 hover:bg-white/85 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/80 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:hover:border-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-50 dark:focus-visible:ring-slate-600 dark:focus-visible:ring-offset-slate-950 cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "switch",
+              "params": {
+                "value": "{{_global.currentUser?.uuid ? 'authenticated' : 'guest'}}"
+              },
+              "cases": {
+                "authenticated": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/qna/write"
+                  }
+                },
+                "guest": {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/login",
+                    "query": {
+                      "redirect": "/board/qna/write"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "edit",
+                "size": "sm",
+                "className": "shrink-0 text-sky-600 dark:text-sky-300"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+              },
+              "text": "$t:home.community_entry_strip.ask"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-slate-200 hover:bg-white/85 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/80 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:hover:border-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-50 dark:focus-visible:ring-slate-600 dark:focus-visible:ring-offset-slate-950 cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/resources"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "folder-open",
+                "size": "sm",
+                "className": "shrink-0 text-indigo-600 dark:text-indigo-300"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+              },
+              "text": "$t:home.community_entry_strip.archive"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-slate-200 hover:bg-white/85 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/80 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:hover:border-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-50 dark:focus-visible:ring-slate-600 dark:focus-visible:ring-offset-slate-950 cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/support"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "exclamation-triangle",
+                "size": "sm",
+                "className": "shrink-0 text-slate-500 dark:text-slate-400"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+              },
+              "text": "$t:home.community_entry_strip.support"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-slate-200 hover:bg-white/85 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/80 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:hover:border-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-50 dark:focus-visible:ring-slate-600 dark:focus-visible:ring-offset-slate-950 cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/page/refund"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "exclamation-triangle",
+                "size": "sm",
+                "className": "shrink-0 text-slate-500 dark:text-slate-400"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "truncate text-xs font-medium text-slate-700 dark:text-slate-200"
+              },
+              "text": "$t:home.community_entry_strip.policy"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

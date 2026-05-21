@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "flex gap-2 mb-6"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex-1 relative"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "search",
+            "size": "sm",
+            "className": "absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "q",
+            "value": "{{query?.q ?? ''}}",
+            "placeholder": "$t:search.placeholder",
+            "className": "w-full pl-12 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "q": "{{$event.target.value}}"
+              }
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "handler": "navigate",
+              "params": {
+                "path": "/search",
+                "query": {
+                  "q": "{{$event.target.value}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "px-6 py-3 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-700 dark:hover:bg-teal-600 active:scale-95 active:bg-teal-800 dark:active:bg-teal-600 transition-all cursor-pointer"
+      },
+      "text": "$t:search.button",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "searchPage": 1
+              }
+            },
+            {
+              "handler": "navigate",
+              "params": {
+                "path": "/search",
+                "query": {
+                  "q": "{{_local.q ?? ''}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

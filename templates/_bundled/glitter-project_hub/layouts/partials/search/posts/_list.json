@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{searchResults?.data?.posts?.items && searchResults?.data?.posts?.items?.length > 0}}",
+  "props": {
+    "className": "bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "{{searchResults?.data?.posts?.items ?? []}}",
+        "item_var": "post",
+        "index_var": "idx"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{idx > 0}}",
+          "props": {
+            "className": "border-t border-slate-200 dark:border-slate-700"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "block w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{post?.url}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-2 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{post?.board_name}}",
+                  "props": {
+                    "className": "flex-shrink-0 text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded"
+                  },
+                  "text": "{{post?.board_name}}"
+                },
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{post?.title_highlighted ?? post?.title}}",
+                    "className": "font-medium text-slate-900 dark:text-white [&_mark]:bg-teal-100 [&_mark]:dark:bg-teal-500/30 [&_mark]:px-0.5 [&_mark]:rounded"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "if": "{{post?.content_preview}}",
+              "props": {
+                "content": "{{post?.content_preview_highlighted ?? post?.content_preview}}",
+                "isHtml": "{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}",
+                "className": "text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2 [&_mark]:bg-teal-100 [&_mark]:dark:bg-teal-500/30 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{post?.author_name}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "title": "{{post?.created_at ?? ''}}"
+                  },
+                  "text": "{{post?.created_at_formatted ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(post?.view_count ?? 0) > 0}}",
+                  "props": {
+                    "className": "flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "eye",
+                        "size": "xs"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{post?.view_count}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(post?.comment_count ?? 0) > 0}}",
+                  "props": {
+                    "className": "flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "comment-dots",
+                        "size": "xs"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{post?.comment_count}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

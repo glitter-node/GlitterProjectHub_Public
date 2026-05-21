@@ -1,0 +1,80 @@
+{
+  "name": "glitter-project_hub",
+  "version": "0.1.34",
+  "description": "Glitter Project Hub platform interface for project ecosystems, infrastructure collaboration, and operational knowledge sharing",
+  "type": "module",
+  "main": "dist/components.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "components.json"
+  ],
+  "scripts": {
+    "build": "node node_modules/vite/bin/vite.js build && node node_modules/vite/bin/vite.js build --config vite.config.home-critical.ts && mkdir -p dist/assets/images && cp src/assets/glitter-project-hub-logo*.webp dist/assets/images/ && chmod -R a+rX dist",
+    "build:watch": "node node_modules/vite/bin/vite.js build --watch",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "g7",
+    "template",
+    "user",
+    "react",
+    "components",
+    "glitter-project_hub",
+    "GlitterProjectHub",
+    "project-hub",
+    "community-platform",
+    "json-layout",
+    "dynamic-renderer"
+  ],
+  "author": "Glitter.kr",
+  "license": "MIT",
+  "homepage": "https://github.com/glitter-gim/GlitterProjectHub/tree/main/templates/_bundled/glitter-project_hub",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glitter-gim/GlitterProjectHub.git",
+    "directory": "templates/_bundled/glitter-project_hub"
+  },
+  "bugs": {
+    "url": "https://github.com/glitter-gim/GlitterProjectHub/issues"
+  },
+  "displayName": "Glitter Project Hub",
+  "templateId": "glitter-project_hub",
+  "iifeGlobal": "GlitterProjectHub",
+  "changelog": "https://github.com/glitter-gim/GlitterProjectHub/blob/main/templates/_bundled/glitter-project_hub/CHANGELOG.md",
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "axe-core": "^4.11.0",
+    "happy-dom": "^20.0.10",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.6",
+    "vitest-axe": "^0.1.0"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "browser-image-compression": "^2.0.2",
+    "dompurify": "^3.3.1",
+    "yet-another-react-lightbox": "^3.27.0"
+  }
+}

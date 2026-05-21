@@ -1,0 +1,1858 @@
+{
+  "version": "0.1.0",
+  "layout_name": "_user_base",
+  "meta": {
+    "title": "$t:user.base_layout_title",
+    "is_base": true,
+    "seo": {
+      "enabled": false,
+      "data_sources": [
+        "boards"
+      ],
+      "vars": {
+        "site_name": "$core_settings:general.site_name"
+      },
+      "og": {
+        "type": "website"
+      }
+    }
+  },
+  "globalHeaders": [],
+  "transition_overlay": {
+    "enabled": true,
+    "style": "spinner",
+    "target": "main_content_area",
+    "spinner": {
+      "component": "PageLoading"
+    }
+  },
+  "init_actions": [
+    {
+      "handler": "initTheme"
+    },
+    {
+      "handler": "setupRealtimeLifecycle"
+    }
+  ],
+  "data_sources": [
+    {
+      "id": "boards",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
+      "method": "GET",
+      "auto_fetch": true,
+      "loading_strategy": "progressive",
+      "fallback": {
+        "data": []
+      }
+    },
+    {
+      "id": "current_user",
+      "type": "api",
+      "endpoint": "/api/auth/user",
+      "method": "GET",
+      "auto_fetch": true,
+      "if": "{{!(window.location.pathname === '/' && !localStorage.getItem('auth_token'))}}",
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "initGlobal": "currentUser",
+      "fallback": {
+        "data": []
+      },
+      "errorHandling": {
+        "401": {
+          "handler": "suppress"
+        }
+      }
+    },
+    {
+      "id": "notification_unread_count",
+      "type": "api",
+      "endpoint": "/api/user/notifications/unread-count",
+      "method": "GET",
+      "auto_fetch": true,
+      "if": "{{!(window.location.pathname === '/' && !localStorage.getItem('auth_token'))}}",
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "initGlobal": {
+        "key": "notificationCount",
+        "path": "unread_count"
+      },
+      "fallback": {
+        "data": {
+          "unread_count": 0
+        }
+      },
+      "errorHandling": {
+        "401": {
+          "handler": "suppress"
+        },
+        "403": {
+          "handler": "suppress"
+        }
+      }
+    },
+    {
+      "id": "notifications",
+      "type": "api",
+      "endpoint": "/api/user/notifications",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "params": {
+        "per_page": 15,
+        "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+      },
+      "fallback": {
+        "data": {
+          "data": []
+        }
+      },
+      "errorHandling": {
+        "401": {
+          "handler": "suppress"
+        },
+        "403": {
+          "handler": "suppress"
+        }
+      }
+    },
+    {
+      "id": "user_notification_ws",
+      "type": "websocket",
+      "if": "{{!(window.location.pathname === '/' && !localStorage.getItem('auth_token'))}}",
+      "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
+      "event": "notification.received",
+      "channel_type": "private",
+      "target_source": "notification_unread_count",
+      "onReceive": [
+        {
+          "handler": "refetchDataSource",
+          "params": {
+            "dataSourceId": "notification_unread_count"
+          }
+        },
+        {
+          "handler": "refetchDataSource",
+          "params": {
+            "dataSourceId": "notifications"
+          }
+        },
+        {
+          "handler": "toast",
+          "params": {
+            "type": "info",
+            "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
+            "duration": 5000
+          }
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "global_toast",
+      "type": "composite",
+      "name": "Toast",
+      "props": {
+        "toasts": "{{_global.toasts}}",
+        "position": "bottom-center",
+        "duration": 5000
+      }
+    },
+    {
+      "id": "page_transition_indicator",
+      "type": "composite",
+      "name": "PageTransitionIndicator"
+    },
+    {
+      "id": "user_layout_root",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950"
+      },
+      "children": [
+        {
+          "id": "mobile_overlay",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{false}}",
+          "props": {
+            "className": "fixed inset-0 z-40 bg-black/50"
+          },
+          "responsive": {
+            "portable": {
+              "if": "{{_global.mobileMenuOpen}}"
+            }
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "mobileMenuOpen": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "mobile_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "hidden"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex items-center justify-between h-14 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "mobile_header_left",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_global.settings?.general?.site_logo_url}}",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Img",
+                      "props": {
+                        "src": "/api/templates/assets/glitter-project_hub/assets/images/glitter-project-hub-logo.webp",
+                        "alt": "{{_global.settings?.general?.site_name ?? '$t:common.site_fallback'}}",
+                        "width": 160,
+                        "height": 32,
+                        "className": "h-8 w-auto"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_global.settings?.general?.site_logo_url}}",
+                  "props": {
+                    "className": "text-lg font-bold text-slate-900 dark:text-white"
+                  },
+                  "text": "{{_global.settings?.general?.site_name ?? '$t:common.site_fallback'}}"
+                }
+              ]
+            },
+            {
+              "id": "mobile_header_right",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "id": "mobile_theme_btn",
+                  "type": "composite",
+                  "name": "ThemeToggle",
+                  "props": {
+                    "autoText": "$t:common.theme.auto",
+                    "lightText": "$t:common.theme.light",
+                    "darkText": "$t:common.theme.dark"
+                  }
+                },
+                {
+                  "id": "mobile_notification_center",
+                  "type": "composite",
+                  "name": "NotificationCenter",
+                  "if": "{{_global.currentUser?.uuid}}",
+                  "props": {
+                    "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                    "unreadCount": "{{_global.notificationCount ?? 0}}",
+                    "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                    "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                    "titleText": "$t:mypage.notifications.title",
+                    "emptyText": "$t:mypage.notifications.empty",
+                    "markAllReadText": "$t:mypage.notifications.mark_all_read",
+                    "deleteAllText": "$t:mypage.notifications.delete_all",
+                    "unreadOnlyText": "$t:mypage.notifications.unread_only",
+                    "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                    "dropdownAlign": "right"
+                  },
+                  "actions": [
+                    {
+                      "event": "onClose",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/user/notifications/read-batch",
+                            "params": {
+                              "method": "POST",
+                              "body": {
+                                "ids": "{{$args[0]}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "notification_unread_count"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onNotificationClick",
+                      "handler": "parallel",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "navigate",
+                            "params": {
+                              "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                            }
+                          },
+                          {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/user/notifications/{{$args[0].id}}/read",
+                            "params": {
+                              "method": "PATCH"
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "notification_unread_count"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onMarkAllRead",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/user/notifications/read-all",
+                            "params": {
+                              "method": "POST"
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsCurrentPage": 1,
+                                  "notificationsHasMore": null,
+                                  "notificationsLoadingMore": false
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "notifications"
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                  "dataSourceId": "notification_unread_count"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onUnreadOnlyToggle",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "notificationsUnreadOnly": "{{$args[0]}}",
+                              "notificationsCurrentPage": 1,
+                              "notificationsHasMore": null,
+                              "notificationsLoadingMore": false
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "notifications"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onDelete",
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/user/notifications/{{$args[0].id}}",
+                      "params": {
+                        "method": "DELETE"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "notificationsCurrentPage": 1,
+                            "notificationsHasMore": null
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "notifications"
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "notification_unread_count"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "event": "onDeleteAll",
+                      "handler": "openModal",
+                      "target": "notification_delete_all_confirm_modal"
+                    },
+                    {
+                      "event": "onLoadMore",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "notificationsLoadingMore": true
+                            }
+                          },
+                          {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/user/notifications",
+                            "params": {
+                              "method": "GET",
+                              "query": {
+                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                "per_page": 15,
+                                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "appendDataSource",
+                                "params": {
+                                  "dataSourceId": "notifications",
+                                  "dataPath": "data.data",
+                                  "newData": "{{response.data.data ?? []}}"
+                                }
+                              },
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                  "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                  "notificationsLoadingMore": false
+                                }
+                              }
+                            ],
+                            "onError": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsLoadingMore": false
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onRefresh",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "notificationsCurrentPage": 1,
+                              "notificationsHasMore": null,
+                              "notificationsLoadingMore": false
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "notification_unread_count"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "notifications"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "mobile_user_btn",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "{{_global.currentUser ? '/mypage' : '/login'}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "user",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "mobile_menu_toggle",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "mobileMenuOpen": "{{!_global.mobileMenuOpen}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "bars",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mobile_nav_drawer",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "hidden"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "{{_global.mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-transform duration-300 bg-white dark:bg-slate-800 shadow-xl overflow-y-auto"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "font-semibold text-slate-900 dark:text-white"
+                  },
+                  "text": "$t:user.menu"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "mobileMenuOpen": false
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "x",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "p-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "relative"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "search",
+                        "className": "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "q",
+                        "placeholder": "$t:user.search_placeholder",
+                        "className": "w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500"
+                      },
+                      "actions": [
+                        {
+                          "type": "keydown",
+                          "key": "Enter",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "mobileMenuOpen": false
+                              }
+                            },
+                            {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/search",
+                                "query": {
+                                  "q": "{{$event.target.value}}"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.currentUser?.uuid}}",
+              "props": {
+                "className": "px-4 pb-4 border-b border-slate-200 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "w-full flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "mobileUserMenuOpen": "{{!_global.mobileUserMenuOpen}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Avatar",
+                      "props": {
+                        "avatar": "{{_global.currentUser?.avatar}}",
+                        "name": "{{_global.currentUser?.name ?? '?'}}",
+                        "size": "md"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1 min-w-0 text-left"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "font-medium text-slate-900 dark:text-white truncate"
+                          },
+                          "text": "{{_global.currentUser?.name}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-slate-500 dark:text-slate-400 truncate"
+                          },
+                          "text": "{{_global.currentUser?.email}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-down",
+                        "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} w-5 h-5 text-slate-400 dark:text-slate-500 transition-transform duration-200"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileUserMenuOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "overflow-hidden min-h-0 py-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "A",
+                          "if": "{{_global.currentUser?.is_admin}}",
+                          "props": {
+                            "href": "/admin",
+                            "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-teal-600 dark:text-teal-400 hover:bg-slate-200 dark:hover:bg-slate-600 font-medium"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "settings",
+                                "className": "w-4 h-4"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:common.admin_menu"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false,
+                                    "mobileUserMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/mypage"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "user",
+                                "className": "w-4 h-4"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:common.mypage"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{$locales.length > 1}}",
+                          "props": {
+                            "className": "mt-2 pt-2 border-t border-slate-200 dark:border-slate-600"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "px-4 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase"
+                              },
+                              "text": "$t:common.language"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "iteration": {
+                                "source": "{{$locales}}",
+                                "item_var": "loc"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Button",
+                                  "props": {
+                                    "className": "{{loc === $locale ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400' : 'text-slate-700 dark:text-slate-300'}} w-full flex items-center justify-start gap-3 px-4 py-2 hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "click",
+                                      "handler": "setLocale",
+                                      "target": "{{loc}}"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "globe",
+                                        "className": "w-4 h-4"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-slate-200 dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "logout",
+                              "onSuccess": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false,
+                                    "mobileUserMenuOpen": false
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "log-out",
+                                "className": "w-4 h-4"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:auth.logout"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_global.currentUser?.uuid}}",
+              "props": {
+                "className": "px-4 pb-4 border-b border-slate-200 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "flex-1 py-2.5 text-center bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium text-sm cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "mobileMenuOpen": false
+                              }
+                            },
+                            {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/login"
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "text": "$t:auth.login"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "flex-1 py-2.5 text-center border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "mobileMenuOpen": false
+                              }
+                            },
+                            {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/register"
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "text": "$t:auth.register_link"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "p-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mobileMenuOpen": false
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "home",
+                        "className": "w-5 h-5"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:nav.home"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mobileMenuOpen": false
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/boards"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "list",
+                        "className": "w-5 h-5"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:nav.all_boards"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mobileMenuOpen": false
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/popular"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "fire",
+                        "className": "w-5 h-5 text-orange-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:nav.popular"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "mobileMenuOpen": false
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/board/qna"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "question-circle",
+                        "className": "w-5 h-5"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:nav.qna"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "px-4 pb-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-3"
+                  },
+                  "text": "$t:nav.more"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "{{(boards.data ?? []).filter(board => board.slug !== 'qna')}}",
+                    "item_var": "board"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "w-full flex items-center justify-between px-3 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "mobileMenuOpen": false
+                              }
+                            },
+                            {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/board/{{board.slug}}"
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{board.name}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{board.post_count > 0}}",
+                          "props": {
+                            "className": "text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "{{board.post_count}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "px-4 py-4 border-b border-slate-200 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-x-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2"
+                          },
+                          "text": "$t:user.footer.info"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/about"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.about"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/faq"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.faq"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/contact"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.contact"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2"
+                          },
+                          "text": "$t:user.footer.policy"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/terms"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.terms"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/privacy"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.privacy"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "block w-full py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-left cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "mobileMenuOpen": false
+                                  }
+                                },
+                                {
+                                  "handler": "navigate",
+                                  "params": {
+                                    "path": "/page/refund"
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          "text": "$t:user.footer.refund"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "desktop_header",
+          "type": "composite",
+          "name": "Header",
+          "props": {
+            "logo": "/api/templates/assets/glitter-project_hub/assets/images/glitter-project-hub-logo.webp",
+            "siteName": "{{_global.settings?.general?.site_name ?? '$t:common.site_fallback'}}",
+            "user": "{{_global.currentUser}}",
+            "notificationCount": "{{_global.notificationCount ?? 0}}",
+            "boards": "{{boards.data ?? []}}",
+            "availableLocales": "{{$locales}}",
+            "currentLocale": "{{$locale}}",
+            "className": "hidden",
+            "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+            "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+            "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+            "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
+          },
+          "responsive": {
+            "desktop": {
+              "props": {
+                "className": "block"
+              }
+            }
+          },
+          "actions": [
+            {
+              "event": "onNotificationClose",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/user/notifications/read-batch",
+                    "params": {
+                      "method": "POST",
+                      "body": {
+                        "ids": "{{$args[0]}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "notificationsCurrentPage": 1,
+                          "notificationsHasMore": null,
+                          "notificationsLoadingMore": false
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "notifications"
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "notification_unread_count"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "event": "onNotificationClick",
+              "handler": "parallel",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "navigate",
+                    "params": {
+                      "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                    }
+                  },
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/user/notifications/{{$args[0].id}}/read",
+                    "params": {
+                      "method": "PATCH"
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "notification_unread_count"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "event": "onNotificationMarkAllRead",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/user/notifications/read-all",
+                    "params": {
+                      "method": "POST"
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "notificationsCurrentPage": 1,
+                          "notificationsHasMore": null,
+                          "notificationsLoadingMore": false
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "notifications"
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": {
+                          "dataSourceId": "notification_unread_count"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "event": "onNotificationUnreadOnlyToggle",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "notificationsUnreadOnly": "{{$args[0]}}",
+                      "notificationsCurrentPage": 1,
+                      "notificationsHasMore": null,
+                      "notificationsLoadingMore": false
+                    }
+                  },
+                  {
+                    "handler": "refetchDataSource",
+                    "params": {
+                      "dataSourceId": "notifications"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "onNotificationDelete",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/user/notifications/{{$args[0].id}}",
+              "params": {
+                "method": "DELETE"
+              },
+              "onSuccess": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "notificationsCurrentPage": 1,
+                    "notificationsHasMore": null
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "notifications"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "notification_unread_count"
+                  }
+                }
+              ]
+            },
+            {
+              "event": "onNotificationDeleteAll",
+              "handler": "openModal",
+              "target": "notification_delete_all_confirm_modal"
+            },
+            {
+              "event": "onNotificationLoadMore",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "notificationsLoadingMore": true
+                    }
+                  },
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/user/notifications",
+                    "params": {
+                      "method": "GET",
+                      "query": {
+                        "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                        "per_page": 15,
+                        "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "appendDataSource",
+                        "params": {
+                          "dataSourceId": "notifications",
+                          "dataPath": "data.data",
+                          "newData": "{{response.data.data ?? []}}"
+                        }
+                      },
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                          "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                          "notificationsLoadingMore": false
+                        }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "notificationsLoadingMore": false
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "event": "onNotificationRefresh",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "notificationsCurrentPage": 1,
+                      "notificationsHasMore": null,
+                      "notificationsLoadingMore": false
+                    }
+                  },
+                  {
+                    "handler": "refetchDataSource",
+                    "params": {
+                      "dataSourceId": "notification_unread_count"
+                    }
+                  },
+                  {
+                    "handler": "refetchDataSource",
+                    "params": {
+                      "dataSourceId": "notifications"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "main_content_area",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-1"
+          },
+          "children": [
+            {
+              "id": "main_content",
+              "type": "layout",
+              "name": "Container",
+              "slot": "content",
+              "props": {
+                "className": "min-h-fit px-4"
+              },
+              "responsive": {
+                "desktop": {
+                  "props": {
+                    "className": "min-h-fit max-w-7xl mx-auto px-8"
+                  }
+                }
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "type": "composite",
+          "name": "Footer",
+          "props": {
+            "siteName": "$t:footer.project_name",
+            "siteDescription": "$t:footer.description",
+            "copyrightText": "$t:footer.copyright",
+            "socialLinks": {
+              "github": "{{_global.settings?.social?.github}}",
+              "twitter": "{{_global.settings?.social?.twitter}}",
+              "discord": "{{_global.settings?.social?.discord}}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "modals": [
+    {
+      "partial": "partials/_modal_notification_delete_all_confirm.json"
+    }
+  ]
+}

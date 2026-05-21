@@ -1,0 +1,456 @@
+<?php
+
+namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
+use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
+use Modules\Sirsoft\Board\Models\Attachment;
+use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Models\Comment;
+use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+
+/**
+ * STEP 4: 카운팅 Listener 테스트
+ *
+ * 게시글/댓글/첨부파일 생성·삭제·복원 시 카운팅 컬럼이 올바르게 동기화되는지 검증합니다.
+ */
+class CountSyncListenerTest extends ModuleTestCase
+{
+    private Board $board;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->board = Board::firstOrCreate(
+            ['slug' => 'count-sync-test'],
+            [
+                'name' => ['ko' => '카운트 동기화 테스트', 'en' => 'Count Sync Test'],
+                'is_active' => true,
+            ]
+        );
+    }
+
+    // ── sync:true 선언 검증 (큐 워커 없을 때도 즉시 실행되는지) ──
+
+    /**
+     * 6개 Listener 전부가 'sync' => true 로 선언되어 있어야 합니다.
+     * 이 선언이 없으면 큐 워커가 꺼진 환경에서 카운트가 영원히 drift 됩니다.
+     */
+    public function test_all_count_listeners_declare_sync_true(): void
+    {
+        $listeners = [
+            BoardPostsCountSyncListener::class,
+            BoardCommentsCountSyncListener::class,
+            PostCountSyncListener::class,
+            PostReplySyncListener::class,
+            PostAttachmentCountSyncListener::class,
+            CommentReplySyncListener::class,
+        ];
+
+        foreach ($listeners as $listenerClass) {
+            $hooks = $listenerClass::getSubscribedHooks();
+            foreach ($hooks as $hookName => $config) {
+                $this->assertTrue(
+                    ($config['sync'] ?? false) === true,
+                    "{$listenerClass} 의 {$hookName} 훅은 sync:true 로 선언되어야 합니다."
+                );
+            }
+        }
+    }
+
+    // ── PostCountSyncListener (comments_count) ──
+
+    /**
+     * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
+     */
+    public function test_post_count_sync_listener_subscribes_to_comment_hooks(): void
+    {
+        $hooks = PostCountSyncListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('sirsoft-board.comment.after_create', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.comment.after_delete', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.comment.after_restore', $hooks);
+    }
+
+    /**
+     * 댓글 생성 시 게시글의 comments_count가 증가하는지 확인합니다.
+     */
+    public function test_comments_count_increases_on_comment_create(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId);
+
+        $comment = Comment::find($commentId);
+        $listener = app(PostCountSyncListener::class);
+        $listener->syncCommentsCount($comment, $this->board->slug);
+
+        $post = DB::table('board_posts')->where('id', $postId)->first();
+        $this->assertEquals(1, $post->comments_count);
+    }
+
+    /**
+     * 댓글 삭제 시 게시글의 comments_count가 감소하는지 확인합니다.
+     */
+    public function test_comments_count_decreases_on_comment_delete(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId1 = $this->createTestComment($postId);
+        $commentId2 = $this->createTestComment($postId);
+
+        // 초기 동기화
+        $listener = app(PostCountSyncListener::class);
+        $listener->syncCommentsCount(Comment::find($commentId1), $this->board->slug);
+        $this->assertEquals(2, DB::table('board_posts')->where('id', $postId)->value('comments_count'));
+
+        // 댓글 1개 soft delete
+        DB::table('board_comments')->where('id', $commentId2)->update(['deleted_at' => now()]);
+        $listener->syncCommentsCount(Comment::withTrashed()->find($commentId2), $this->board->slug);
+
+        $this->assertEquals(1, DB::table('board_posts')->where('id', $postId)->value('comments_count'));
+    }
+
+    // ── BoardPostsCountSyncListener (boards.posts_count) ──
+
+    /**
+     * 게시글 생성 시 게시판의 posts_count가 동기화되는지 확인합니다.
+     */
+    public function test_board_posts_count_increases_on_post_create(): void
+    {
+        $postId = $this->createTestPost();
+        $post = Post::find($postId);
+
+        $listener = app(BoardPostsCountSyncListener::class);
+        $listener->syncPostsCount($post, $this->board->slug);
+
+        $storedCount = DB::table('boards')->where('id', $this->board->id)->value('posts_count');
+        $this->assertEquals(1, $storedCount);
+    }
+
+    /**
+     * 게시글 soft delete 후 동기화 시 boards.posts_count 에서 제외되는지 확인합니다.
+     */
+    public function test_board_posts_count_excludes_soft_deleted(): void
+    {
+        $postId1 = $this->createTestPost();
+        $postId2 = $this->createTestPost();
+
+        DB::table('board_posts')->where('id', $postId2)->update(['deleted_at' => now()]);
+
+        $post = Post::withTrashed()->find($postId2);
+        $listener = app(BoardPostsCountSyncListener::class);
+        $listener->syncPostsCount($post, $this->board->slug);
+
+        $storedCount = DB::table('boards')->where('id', $this->board->id)->value('posts_count');
+        $this->assertEquals(1, $storedCount);
+    }
+
+    // ── BoardCommentsCountSyncListener (boards.comments_count) ──
+
+    /**
+     * 댓글 생성 시 게시판의 comments_count가 동기화되는지 확인합니다.
+     */
+    public function test_board_comments_count_increases_on_comment_create(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId);
+        $comment = Comment::find($commentId);
+
+        $listener = app(BoardCommentsCountSyncListener::class);
+        $listener->syncCommentsCount($comment, $this->board->slug);
+
+        $storedCount = DB::table('boards')->where('id', $this->board->id)->value('comments_count');
+        $this->assertEquals(1, $storedCount);
+    }
+
+    /**
+     * 댓글 soft delete 후 boards.comments_count 에서 제외되는지 확인합니다.
+     */
+    public function test_board_comments_count_excludes_soft_deleted(): void
+    {
+        $postId = $this->createTestPost();
+        $c1 = $this->createTestComment($postId);
+        $c2 = $this->createTestComment($postId);
+
+        DB::table('board_comments')->where('id', $c2)->update(['deleted_at' => now()]);
+
+        $comment = Comment::withTrashed()->find($c2);
+        $listener = app(BoardCommentsCountSyncListener::class);
+        $listener->syncCommentsCount($comment, $this->board->slug);
+
+        $storedCount = DB::table('boards')->where('id', $this->board->id)->value('comments_count');
+        $this->assertEquals(1, $storedCount);
+    }
+
+    // ── PostAttachmentCountSyncListener (attachments_count) ──
+
+    /**
+     * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
+     * after_link 훅도 반드시 포함되어 있어야 함 (임시 업로드 → 실 게시글 연결 시 카운트 동기화용)
+     */
+    public function test_attachment_count_sync_listener_subscribes_to_attachment_hooks(): void
+    {
+        $hooks = PostAttachmentCountSyncListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('sirsoft-board.attachment.after_upload', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.attachment.after_link', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.attachment.after_delete', $hooks);
+    }
+
+    /**
+     * 임시 업로드 → linkTempAttachments 후 after_link 훅으로 카운트가 반영되는지 확인합니다.
+     * 과거에는 temp 시점의 after_upload 훅만 있고 linkTemp 시점 훅이 없어 drift 발생했음.
+     */
+    public function test_attachments_count_syncs_after_link_hook(): void
+    {
+        $postId = $this->createTestPost();
+        $attachmentId = $this->createTestAttachment($postId);
+
+        // 게시글이 attachments_count=0 이라고 가정 (drift 상태 재현)
+        DB::table('board_posts')->where('id', $postId)->update(['attachments_count' => 0]);
+
+        $attachment = Attachment::find($attachmentId);
+        $listener = app(PostAttachmentCountSyncListener::class);
+        $listener->syncAttachmentsCount($attachment);
+
+        $storedCount = DB::table('board_posts')->where('id', $postId)->value('attachments_count');
+        $this->assertEquals(1, $storedCount, '임시 업로드 → link 이후 drift 가 해소되어야 합니다.');
+    }
+
+    /**
+     * 첨부 soft-delete 후 동기화 시 attachments_count 에서 제외되는지 확인합니다.
+     */
+    public function test_attachments_count_excludes_soft_deleted(): void
+    {
+        $postId = $this->createTestPost();
+        $a1 = $this->createTestAttachment($postId);
+        $a2 = $this->createTestAttachment($postId);
+
+        DB::table('board_attachments')->where('id', $a2)->update(['deleted_at' => now()]);
+
+        $attachment = Attachment::withTrashed()->find($a2);
+        $listener = app(PostAttachmentCountSyncListener::class);
+        $listener->syncAttachmentsCount($attachment);
+
+        $storedCount = DB::table('board_posts')->where('id', $postId)->value('attachments_count');
+        $this->assertEquals(1, $storedCount);
+    }
+
+    /**
+     * 첨부파일 업로드 시 게시글의 attachments_count가 증가하는지 확인합니다.
+     */
+    public function test_attachments_count_increases_on_upload(): void
+    {
+        $postId = $this->createTestPost();
+        $attachmentId = $this->createTestAttachment($postId);
+
+        $attachment = Attachment::find($attachmentId);
+        $listener = app(PostAttachmentCountSyncListener::class);
+        $listener->syncAttachmentsCount($attachment);
+
+        $post = DB::table('board_posts')->where('id', $postId)->first();
+        $this->assertEquals(1, $post->attachments_count);
+    }
+
+    /**
+     * post_id가 없는 첨부파일은 무시되는지 확인합니다.
+     */
+    public function test_attachments_count_skips_when_no_post_id(): void
+    {
+        $attachment = new Attachment();
+        $attachment->post_id = null;
+
+        $listener = app(PostAttachmentCountSyncListener::class);
+        $listener->syncAttachmentsCount($attachment);
+
+        // 예외 없이 정상 종료
+        $this->assertTrue(true);
+    }
+
+    // ── PostReplySyncListener (replies_count) ──
+
+    /**
+     * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
+     */
+    public function test_post_reply_sync_listener_subscribes_to_post_hooks(): void
+    {
+        $hooks = PostReplySyncListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('sirsoft-board.post.after_create', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.post.after_delete', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.post.after_restore', $hooks);
+    }
+
+    /**
+     * 답글 생성 시 부모 게시글의 replies_count가 증가하는지 확인합니다.
+     */
+    public function test_replies_count_increases_on_reply_create(): void
+    {
+        $parentId = $this->createTestPost(['title' => '원글']);
+        $replyId = $this->createTestPost(['title' => '답글', 'parent_id' => $parentId, 'depth' => 1]);
+
+        $reply = Post::find($replyId);
+        $listener = app(PostReplySyncListener::class);
+        $listener->syncRepliesCount($reply, $this->board->slug);
+
+        $parent = DB::table('board_posts')->where('id', $parentId)->first();
+        $this->assertEquals(1, $parent->replies_count);
+    }
+
+    /**
+     * parent_id가 없는 게시글(원글)은 무시되는지 확인합니다.
+     */
+    public function test_replies_count_skips_when_no_parent(): void
+    {
+        $postId = $this->createTestPost();
+
+        $post = Post::find($postId);
+        $listener = app(PostReplySyncListener::class);
+        $listener->syncRepliesCount($post, $this->board->slug);
+
+        // 예외 없이 정상 종료
+        $this->assertTrue(true);
+    }
+
+    // ── CommentReplySyncListener (board_comments.replies_count) ──
+
+    /**
+     * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
+     */
+    public function test_comment_reply_sync_listener_subscribes_to_comment_hooks(): void
+    {
+        $hooks = CommentReplySyncListener::getSubscribedHooks();
+
+        $this->assertArrayHasKey('sirsoft-board.comment.after_create', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.comment.after_delete', $hooks);
+        $this->assertArrayHasKey('sirsoft-board.comment.after_restore', $hooks);
+    }
+
+    /**
+     * 대댓글 생성 시 부모 댓글의 replies_count가 증가하는지 확인합니다.
+     */
+    public function test_comment_replies_count_increases_on_reply_create(): void
+    {
+        $postId = $this->createTestPost();
+        $parentCommentId = $this->createTestComment($postId, ['content' => '부모 댓글']);
+        $replyCommentId = $this->createTestComment($postId, [
+            'content' => '대댓글',
+            'parent_id' => $parentCommentId,
+        ]);
+
+        $replyComment = Comment::find($replyCommentId);
+        $listener = app(CommentReplySyncListener::class);
+        $listener->syncRepliesCount($replyComment, $this->board->slug);
+
+        $parentComment = DB::table('board_comments')->where('id', $parentCommentId)->first();
+        $this->assertEquals(1, $parentComment->replies_count);
+    }
+
+    /**
+     * parent_id가 없는 댓글(최상위)은 무시되는지 확인합니다.
+     */
+    public function test_comment_replies_count_skips_when_no_parent(): void
+    {
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId);
+
+        $comment = Comment::find($commentId);
+        $listener = app(CommentReplySyncListener::class);
+        $listener->syncRepliesCount($comment, $this->board->slug);
+
+        // 예외 없이 정상 종료
+        $this->assertTrue(true);
+    }
+
+    // ── 헬퍼 메서드 ──
+
+    /**
+     * 테스트 게시글을 직접 DB에 생성합니다.
+     *
+     * @param  array  $attributes  게시글 속성
+     * @return int 생성된 게시글 ID
+     */
+    private function createTestPost(array $attributes = []): int
+    {
+        $defaults = [
+            'board_id' => $this->board->id,
+            'title' => '테스트 게시글',
+            'content' => '테스트 내용입니다.',
+            'user_id' => null,
+            'author_name' => '테스트',
+            'ip_address' => '127.0.0.1',
+            'is_notice' => false,
+            'is_secret' => false,
+            'status' => 'published',
+            'trigger_type' => 'admin',
+            'view_count' => 0,
+            'replies_count' => 0,
+            'comments_count' => 0,
+            'attachments_count' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        return DB::table('board_posts')->insertGetId(array_merge($defaults, $attributes));
+    }
+
+    /**
+     * 테스트 댓글을 직접 DB에 생성합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @param  array  $attributes  댓글 속성
+     * @return int 생성된 댓글 ID
+     */
+    private function createTestComment(int $postId, array $attributes = []): int
+    {
+        $defaults = [
+            'board_id' => $this->board->id,
+            'post_id' => $postId,
+            'user_id' => null,
+            'author_name' => '테스트',
+            'content' => '테스트 댓글입니다.',
+            'ip_address' => '127.0.0.1',
+            'status' => 'published',
+            'replies_count' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        return DB::table('board_comments')->insertGetId(array_merge($defaults, $attributes));
+    }
+
+    /**
+     * 테스트 첨부파일을 직접 DB에 생성합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @param  array  $attributes  첨부파일 속성
+     * @return int 생성된 첨부파일 ID
+     */
+    private function createTestAttachment(int $postId, array $attributes = []): int
+    {
+        $defaults = [
+            'board_id' => $this->board->id,
+            'post_id' => $postId,
+            'hash' => substr(md5(uniqid()), 0, 12),
+            'original_filename' => 'test.txt',
+            'stored_filename' => 'test_' . uniqid() . '.txt',
+            'disk' => 'local',
+            'path' => 'attachments',
+            'mime_type' => 'text/plain',
+            'size' => 100,
+            'collection' => 'default',
+            'order' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        return DB::table('board_attachments')->insertGetId(array_merge($defaults, $attributes));
+    }
+}

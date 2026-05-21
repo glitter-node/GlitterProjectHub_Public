@@ -1,0 +1,366 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-transparent dark:bg-transparent rounded-none p-4 border-0 opacity-100"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-col gap-2 mb-3"
+      },
+      "responsive": {
+        "desktop": {
+          "props": {
+            "className": "flex flex-row items-center justify-between gap-4 mb-2"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-base font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "map",
+                "size": "sm",
+                "className": "text-slate-400 dark:text-slate-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:home.board_discovery.title"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "variant": "outline",
+            "size": "sm",
+            "className": "gap-2 cursor-pointer self-start text-slate-500 dark:text-slate-500"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/boards"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:home.board_discovery.view_all"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "arrow-right",
+                "size": "sm"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "mb-2 text-xs text-slate-500 dark:text-slate-400"
+      },
+      "text": "$t:home.board_discovery.description"
+    },
+    {
+      "type": "basic",
+      "name": "Ul",
+      "if": "{{(popular_boards?.data ?? []).length > 0}}",
+      "props": {
+        "className": "divide-y divide-slate-200/35 dark:divide-slate-800/50"
+      },
+      "iteration": {
+        "source": "{{(popular_boards?.data ?? []).slice(0, 4)}}",
+        "item_var": "board",
+        "index_var": "index"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Li",
+          "props": {
+            "className": "py-1.5 first:pt-0 last:pb-0"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "w-full flex items-center justify-between gap-3 text-left rounded-md px-2 py-1.5 hover:bg-white/60 dark:hover:bg-slate-900/30 cursor-pointer transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/board/{{board?.slug ?? ''}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                  "name": "Span",
+                  "props": {
+                        "className": "mt-0.5 w-7 h-7 rounded-full bg-slate-100/75 text-slate-600 dark:bg-slate-900/35 dark:text-slate-300 flex items-center justify-center text-xs font-medium shrink-0"
+                      },
+                      "text": "{{index + 1}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "min-w-0"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 min-w-0"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'notice'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.notice"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'free'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.free"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'qna'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.qna"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'resources'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.resources"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'introductions'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.introductions"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(board?.slug ?? '') === 'support'}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "$t:home.space_labels.support"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{!['notice','free','qna','resources','introductions','support'].includes(board?.slug ?? '')}}",
+                              "props": {
+                                "className": "text-sm font-semibold text-slate-800 dark:text-slate-200 truncate"
+                              },
+                              "text": "{{board?.name ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'notice'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_notice"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'free'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_free"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'qna'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_qna"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'resources'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_resources"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'introductions'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_introductions"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{(board?.slug ?? '') === 'support'}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_support"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{!['notice','free','qna','resources','introductions','support'].includes(board?.slug ?? '')}}",
+                          "props": {
+                            "className": "mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                          },
+                          "text": "$t:home.board_discovery.purpose_general"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 shrink-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs font-medium text-slate-600 dark:text-slate-300"
+                      },
+                      "text": "{{board?.posts_count ?? board?.post_count ?? board?.activity_count ?? 0 | number}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                      },
+                      "text": "$t:home.board_discovery.posts_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-right",
+                        "size": "sm",
+                        "className": "text-slate-400"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(popular_boards?.data ?? []).length === 0}}",
+      "props": {
+        "className": "rounded-md border border-dashed border-slate-200/30 bg-transparent px-3 py-3 text-center dark:border-slate-800/45"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "map",
+            "size": "lg",
+            "className": "mx-auto mb-2 text-sky-500/55"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-sm font-medium text-slate-700 dark:text-slate-300"
+          },
+          "text": "$t:home.board_discovery.empty_title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mx-auto mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:home.board_discovery.empty_description"
+        }
+      ]
+    }
+  ]
+}

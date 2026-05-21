@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.searchActiveTab ?? 'all') === 'all'}}",
+      "props": {
+        "className": "flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "file-alt",
+                "size": "sm",
+                "className": "text-slate-500 dark:text-slate-400"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "font-medium text-slate-900 dark:text-white"
+              },
+              "text": "$t:search.tabs.pages"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-teal-600 dark:text-teal-400"
+              },
+              "text": "{{(searchResults?.data?.pages_count ?? 0) | number}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(searchResults?.data?.pages_count ?? 0) > 0}}",
+          "props": {
+            "className": "text-sm text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:search.view_all"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-right",
+                "size": "sm"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "searchActiveTab": "pages",
+                    "searchPage": 1
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "searchResults"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{searchResults?.data?.pages?.items?.length > 0}}",
+      "iteration": {
+        "source": "{{searchResults?.data?.pages?.items ?? []}}",
+        "item_var": "page",
+        "index_var": "pageIdx"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{pageIdx > 0}}",
+          "props": {
+            "className": "border-t border-slate-200 dark:border-slate-700"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "block w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{page.url}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{page.title_highlighted ?? page.title}}",
+                "className": "font-medium text-slate-900 dark:text-white mb-1 [&_mark]:bg-teal-100 [&_mark]:dark:bg-teal-500/30 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{page.content_preview_highlighted ?? page.content_preview}}",
+                "className": "text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2 [&_mark]:bg-teal-100 [&_mark]:dark:bg-teal-500/30 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-slate-500 dark:text-slate-400"
+              },
+              "text": "$t:search.page_published_at|date={{page.published_at ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!searchResults?.data?.pages?.items || searchResults?.data?.pages?.items?.length === 0}}",
+      "props": {
+        "className": "px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:search.empty.pages_in_all"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "version": "0.1.0",
+  "layout_name": "board/popular",
+  "permissions": [],
+  "extends": "_user_base",
+  "data_sources": [
+    {
+      "id": "popularPosts",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-board/boards/popular",
+      "method": "GET",
+      "params": {
+        "period": "{{query.period ?? 'week'}}",
+        "limit": 20
+      },
+      "auto_fetch": true,
+      "auth_required": false,
+      "refetchOnMount": true,
+      "errorHandling": {
+        "403": {
+          "handler": "showErrorPage",
+          "params": {
+            "target": "content"
+          }
+        }
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": {
+          "className": "py-8"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mb-6"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H1",
+                "props": {
+                  "className": "text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "fire",
+                      "size": "lg",
+                      "className": "text-orange-500"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.popular.title"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "text-slate-600 dark:text-slate-400 mt-1"
+                },
+                "text": "$t:board.popular.description"
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "flex gap-2 mb-6"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "className": "{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium' : 'px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'}}"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "clock",
+                      "size": "sm",
+                      "className": "mr-1.5 inline"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.popular.today"
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/boards/popular?period=today"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "className": "{{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium' : 'px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'}}"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "calendar",
+                      "size": "sm",
+                      "className": "mr-1.5 inline"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.popular.this_week"
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/boards/popular?period=week"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "className": "{{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium' : 'px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'}}"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "calendar",
+                      "size": "sm",
+                      "className": "mr-1.5 inline"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.popular.this_month"
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/boards/popular?period=month"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "className": "{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-teal-600 dark:bg-teal-500 text-white rounded-lg font-medium' : 'px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700'}}"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "calendar-alt",
+                      "size": "sm",
+                      "className": "mr-1.5 inline"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.popular.year"
+                  }
+                ],
+                "actions": [
+                  {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                      "path": "/boards/popular?period=year"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "blur_until_loaded": {
+              "enabled": true,
+              "data_sources": "popularPosts"
+            },
+            "props": {
+              "className": "bg-white dark:bg-slate-800 rounded-lg shadow divide-y divide-slate-200 dark:divide-slate-700"
+            },
+            "children": [
+              {
+                "partial": "partials/board/popular/_popular_list.json"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

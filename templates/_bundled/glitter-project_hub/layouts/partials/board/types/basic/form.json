@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "arrow-left"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H1",
+                      "props": {
+                        "className": "text-xl font-bold"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{route.id}}",
+                          "text": "$t:board.edit"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!route.id}}",
+                          "text": "$t:board.write"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-slate-500 dark:text-slate-400"
+                      },
+                      "text": "{{form_meta?.data?.board?.name}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{route.id && form_meta?.data?.author}}",
+          "props": {
+            "className": "mt-3 flex items-center gap-2 text-sm"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-full px-3 py-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "size": "xs",
+                    "className": "text-slate-500 dark:text-slate-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-slate-700 dark:text-slate-300 font-medium"
+                  },
+                  "text": "{{form_meta?.data?.author?.name}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{form_meta?.data?.is_guest_post}}",
+                  "props": {
+                    "className": "ml-1 text-xs text-slate-500 dark:text-slate-400"
+                  },
+                  "text": "$t:userinfo.guest_badge_parenthesized"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-full px-3 py-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "clock",
+                    "size": "xs",
+                    "className": "text-slate-500 dark:text-slate-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-slate-600 dark:text-slate-400"
+                  },
+                  "text": "{{form_meta?.data?.created_at}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partial": "partials/board/form/_parent_post.json"
+    },
+    {
+      "partial": "partials/board/form/_post_form.json"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "policy": {
+    "source_type": {
+      "core": "코어",
+      "module": "모듈",
+      "plugin": "플러그인",
+      "admin": "운영자"
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "type": "layout",
+      "name": "Container",
+      "if": "{{!posts?.data?.board && !_global.hasError}}",
+      "props": {
+        "className": "py-8"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between items-start mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "h-4 w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "h-10 w-28 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end mb-8"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "h-10 w-64 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-col items-center justify-center py-16"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-slate-700 border-t-slate-900 dark:border-t-white mb-4"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-slate-600 dark:text-slate-400 text-base font-medium"
+              },
+              "text": "$t:board.loading_posts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "layout",
+      "name": "Container",
+      "if": "{{_global.hasError}}",
+      "props": {
+        "className": "py-8"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-col items-center justify-center py-16 text-center"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-5xl rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-6 p-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "triangle-exclamation",
+                    "className": "text-amber-600 dark:text-amber-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": {
+                "className": "text-xl font-bold text-slate-900 dark:text-white mb-3"
+              },
+              "text": "$t:board.error_title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-slate-600 dark:text-slate-400 mb-8 max-w-md"
+              },
+              "text": "$t:board.error_description"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "inline-flex items-center gap-2 px-6 py-3 bg-teal-600 dark:bg-teal-500 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 font-medium transition-colors cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "refresh"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "sync",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.reload_page"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

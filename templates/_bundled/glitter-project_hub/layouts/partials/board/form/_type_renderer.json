@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "partial": "partials/board/types/basic/form.json"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "composite",
+  "name": "TabNavigation",
+  "id": "mypageTabNavigation",
+  "props": {
+    "variant": "underline",
+    "className": "mb-6",
+    "tabs": [
+      {
+        "id": "profile",
+        "label": "$t:mypage.tabs.profile",
+        "iconName": "user"
+      },
+      {
+        "id": "board",
+        "label": "$t:mypage.tabs.board",
+        "iconName": "message-square"
+      },
+      {
+        "id": "notifications",
+        "label": "$t:mypage.tabs.notifications",
+        "iconName": "bell"
+      }
+    ],
+    "activeTabId": "{{_computed?.currentTab}}"
+  },
+  "actions": [
+    {
+      "event": "onTabChange",
+      "type": "change",
+      "handler": "navigate",
+      "params": {
+        "path": "{{`/mypage/${$args[0]}`}}"
+      }
+    }
+  ]
+}

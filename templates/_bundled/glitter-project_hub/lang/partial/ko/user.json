@@ -1,0 +1,63 @@
+{
+  "base_layout_title": "글리터 프로젝트 허브",
+  "base_layout_description": "프로젝트와 운영 지식을 잇는 협업 허브",
+  "menu": "메뉴",
+  "search_placeholder": "검색어를 입력하세요",
+  "profile": {
+    "page_title": "사용자 프로필",
+    "posts_page_title": "남긴 기록",
+    "user_not_found": "사용자를 찾을 수 없습니다.",
+    "joined_at": "가입일:",
+    "posts_count": "기록",
+    "comments_count": "댓글",
+    "recent_posts": "최근 활동",
+    "posts_suffix": "님의 기록",
+    "posts_title_for_user": "{{name}}님의 기록",
+    "total_posts": "총 {{count}}개",
+    "no_posts": "남긴 기록이 없습니다.",
+    "view_all": "전체보기",
+    "back_to_profile": "프로필",
+    "back_to_profile_for_user": "{{name}} 프로필",
+    "post_board": "공간",
+    "post_title": "제목",
+    "post_views": "조회",
+    "post_date": "작성일",
+    "badge_blinded": "블라인드"
+  },
+  "nav": {
+    "home": "홈",
+    "popular": "활발한 흐름",
+    "boards": "공간",
+    "mypage": "마이페이지"
+  },
+  "footer": {
+    "info": "정보",
+    "about": "회사소개",
+    "faq": "자주 묻는 질문",
+    "contact": "문의하기",
+    "policy": "정책",
+    "terms": "이용약관",
+    "privacy": "개인정보처리방침",
+    "refund": "커뮤니티 정책"
+  },
+  "page": {
+    "page_title": "페이지",
+    "not_found_title": "페이지를 찾을 수 없습니다",
+    "not_found_description": "요청하신 페이지가 존재하지 않거나 삭제되었습니다.",
+    "back_to_home": "홈으로 돌아가기",
+    "admin_edit": "수정",
+    "status_active": "시행중",
+    "published_at": "발행일",
+    "create_page": "페이지 생성",
+    "attachments": "첨부파일",
+    "download": "다운로드"
+  },
+  "mypage": {
+    "page_title": "마이페이지",
+    "profile_title": "내 정보",
+    "profile_edit_title": "내 정보 수정",
+    "change_password_title": "비밀번호 변경",
+    "notifications_title": "알림",
+    "board_title": "참여 이력"
+  }
+}

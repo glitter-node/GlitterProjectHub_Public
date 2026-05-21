@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "flex items-center justify-between mb-6"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm cursor-pointer"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "navigate",
+          "params": {
+            "path": "/board/{{route.slug}}"
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "list",
+            "size": "sm"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:board.back_to_list"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "props": {
+        "className": "text-lg font-semibold text-slate-900 dark:text-white"
+      },
+      "text": "{{post?.data?.board?.name ?? ''}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{navigation?.data?.prev?.id}}",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
+                "query": {
+                  "del": "{{query.del ?? ''}}"
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-left",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.prev"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{navigation?.data?.next?.id}}",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-sm cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
+                "query": {
+                  "del": "{{query.del ?? ''}}"
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.next"
+            },
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-right",
+                "size": "sm"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

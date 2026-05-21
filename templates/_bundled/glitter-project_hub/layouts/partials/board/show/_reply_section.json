@@ -1,0 +1,299 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-slate-800 rounded-lg shadow"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-6 pt-6 pb-4 border-b border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "comments",
+                "size": "md",
+                "className": "text-teal-500 dark:text-teal-400"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.posts.detail.replies_title|count={{(post?.data?.replies ?? []).length}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "{{post?.data?.replies ?? []}}",
+        "item_var": "reply",
+        "index_var": "replyIndex"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border-t border-slate-200 dark:border-slate-700 px-6 py-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1 mb-2"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "if": "{{reply?.is_secret}}",
+                  "props": {
+                    "name": "lock",
+                    "size": "sm",
+                    "className": "text-slate-500 dark:text-slate-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "if": "{{reply?.status === 'blinded'}}",
+                  "props": {
+                    "name": "eye-slash",
+                    "size": "sm",
+                    "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "A",
+                  "props": {
+                    "href": "/board/{{route.slug}}/{{reply.id}}",
+                    "className": "text-lg font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                  },
+                  "text": "{{reply?.title ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{reply?.deleted_at}}",
+                  "props": {
+                    "className": "inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0"
+                  },
+                  "text": "$t:board.post.deleted_badge"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Avatar",
+                      "props": {
+                        "author": "{{reply?.author}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "composite",
+                      "name": "UserInfo",
+                      "props": {
+                        "author": "{{reply?.author}}",
+                        "layout": "horizontal"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "title": "{{reply?.created_at ?? ''}}"
+                      },
+                      "text": "{{reply?.created_at_formatted ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post?.data?.board?.show_view_count !== false && reply?.view_count !== undefined}}",
+                      "props": {
+                        "className": "flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "eye",
+                            "size": "xs"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{reply.view_count}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{reply?.comment_count !== undefined && reply?.comment_count > 0}}",
+                      "props": {
+                        "className": "flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "comment-dots",
+                            "size": "xs"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{reply.comment_count}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm text-slate-600 dark:text-slate-400 mb-2 {{_local?.expandedReplyId === reply?.id ? '' : 'line-clamp-2'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{reply?.status === 'blinded'}}",
+                  "props": {
+                    "className": "italic text-orange-500 dark:text-orange-400"
+                  },
+                  "text": "$t:board.blinded_post"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{reply?.status !== 'blinded' && reply?.is_secret}}",
+                  "props": {
+                    "className": "italic text-slate-500 dark:text-slate-400"
+                  },
+                  "text": "$t:board.posts.detail.reply_secret_content"
+                },
+                {
+                  "id": "reply_html_content",
+                  "type": "extension_point",
+                  "name": "html_content",
+                  "if": "{{reply?.status !== 'blinded' && !reply?.is_secret}}",
+                  "props": {
+                    "content": "{{reply?.content ?? ''}}",
+                    "isHtml": "{{(reply?.content_mode ?? 'text') === 'html'}}",
+                    "className": "prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&_img]:hidden [&_table]:hidden'}}"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{reply?.content ?? ''}}",
+                        "isHtml": "{{(reply?.content_mode ?? 'text') === 'html'}}",
+                        "className": "prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&_img]:hidden [&_table]:hidden'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{reply?.status !== 'blinded' && !reply?.is_secret && (reply?.content ?? '').length > 200}}",
+              "props": {
+                "className": "flex justify-start"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "expandedReplyId": "{{_local?.expandedReplyId === reply?.id ? null : reply?.id}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "{{_local?.expandedReplyId === reply?.id ? 'chevron-up' : 'chevron-down'}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_local?.expandedReplyId === reply?.id ? '$t:board.show_less' : '$t:board.show_more'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

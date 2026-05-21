@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'basic' || !['gallery','card'].includes(posts?.data?.board?.type ?? 'basic')}}",
+      "children": [
+        {
+          "partial": "../types/basic/index.json"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'gallery'}}",
+      "children": [
+        {
+          "partial": "../types/gallery/index.json"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'card'}}",
+      "children": [
+        {
+          "partial": "../types/card/index.json"
+        }
+      ]
+    }
+  ]
+}

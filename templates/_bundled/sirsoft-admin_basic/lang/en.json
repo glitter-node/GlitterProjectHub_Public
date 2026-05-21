@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "$partial": "partial/en/auth.json"
+  },
+  "nav": {
+    "$partial": "partial/en/nav.json"
+  },
+  "admin": {
+    "$partial": "partial/en/admin.json"
+  },
+  "common": {
+    "$partial": "partial/en/common.json"
+  },
+  "attachment": {
+    "$partial": "partial/en/attachment.json"
+  },
+  "errors": {
+    "$partial": "partial/en/errors.json"
+  },
+  "countries": {
+    "$partial": "partial/en/countries.json"
+  },
+  "extensions": {
+    "$partial": "partial/en/extensions.json"
+  },
+  "identity": {
+    "$partial": "partial/en/identity.json"
+  },
+  "sirsoft-sample": {
+    "$partial": "partial/en/sirsoft-sample.json"
+  }
+}

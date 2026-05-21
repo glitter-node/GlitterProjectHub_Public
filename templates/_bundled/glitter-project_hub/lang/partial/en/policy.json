@@ -1,0 +1,35 @@
+{
+  "no_content": "No content available.",
+  "published_at": "Published",
+  "terms": {
+    "title": "Terms of Service"
+  },
+  "privacy": {
+    "title": "Privacy Policy"
+  },
+  "title": "Community Policy",
+  "introduction": {
+    "title": "Introduction",
+    "body": "This community is a public space where members share knowledge, experience, and opinions. Every member should respect different perspectives and keep discussions aligned with each space's purpose."
+  },
+  "rules": {
+    "title": "Usage Rules",
+    "items": [
+      "Write records and comments in the space that best matches the topic and purpose.",
+      "Use respectful language and make it clear when you are sharing facts, opinions, or personal experience.",
+      "Check rights and visibility before sharing personal information, copyrighted material, or external content."
+    ]
+  },
+  "prohibited": {
+    "title": "Prohibited Behavior",
+    "items": [
+      "Insults, hate speech, harassment, threats, or behavior that prevents others from participating",
+      "Spam, repeated posting, misleading information, malicious links, or harmful files",
+      "Publishing personal information, impersonation, unauthorized material, or encouragement of illegal activity"
+    ]
+  },
+  "enforcement": {
+    "title": "Reporting and Enforcement",
+    "body": "If content appears to violate policy, report it through the reporting feature or contact channel. Operators may review the content and apply actions such as hiding records, requesting edits, or limiting access to protect community safety and discussion quality."
+  }
+}

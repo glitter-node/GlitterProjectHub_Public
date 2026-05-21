@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-slate-800 rounded-lg shadow"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H3",
+      "props": {
+        "className": "text-lg font-semibold text-slate-900 dark:text-white flex items-center justify-between px-6 pt-6 pb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "comment-dots",
+                "size": "lg"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.comments"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{(post?.data?.comments ?? []).length}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{post?.data?.abilities?.can_manage}}",
+          "props": {
+            "type": "button",
+            "className": "{{query.del_cmt === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-teal-600 dark:border-teal-400 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-700'}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}/{{route.id}}",
+                "mergeQuery": true,
+                "query": {
+                  "del_cmt": "{{query.del_cmt === '1' ? '' : '1'}}"
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "eye",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.filter.include_deleted_comments"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "border-b border-slate-200 dark:border-slate-700"
+      }
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(post?.data?.comments ?? []).length === 0 && post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded'}}",
+      "props": {
+        "className": "px-6 py-8 text-center"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Icon",
+          "props": {
+            "name": "comment-dots",
+            "size": "xl",
+            "className": "mx-auto text-slate-300 dark:text-slate-600 mb-3"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:board.no_comments_yet"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "iteration": {
+        "source": "{{post?.data?.comments ?? []}}",
+        "item_var": "comment",
+        "index_var": "idx"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment?.id]] === false)}}",
+          "props": {
+            "className": "border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors {{(comment?.depth ?? 0) > 0 ? 'bg-slate-50 dark:bg-slate-900/50' : ''}}"
+          },
+          "children": [
+            {
+              "partial": "partials/board/show/_comment_item.json"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{(comment?.replies_count ?? 0) > 0 && (comment?.depth ?? 0) === 0}}",
+              "props": {
+                "className": "ml-16 mb-2 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "collapsedReplies": "{{Object.assign({}, _local.collapsedReplies || {}, {[comment?.id]: !(_local.collapsedReplies?.[comment?.id] ?? true)})}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "{{_local.collapsedReplies?.[comment?.id] === false ? 'chevron-up' : 'chevron-down'}}",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.replies_toggle|action={{_local.collapsedReplies?.[comment?.id] === false ? '$t:board.hide_replies' : '$t:board.show_replies'}}|count={{comment?.replies_count}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{post?.data?.status === 'blinded' && post?.data?.abilities?.can_read_comments}}",
+      "props": {
+        "className": "px-6 py-8 text-center border-t border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Icon",
+          "props": {
+            "name": "eye-slash",
+            "size": "xl",
+            "className": "mx-auto text-slate-300 dark:text-slate-600 mb-5"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:board.blinded_comment_disabled"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{post?.data?.abilities?.can_read_comments && !post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded'}}",
+      "props": {
+        "className": "px-6 py-8 text-center border-t border-slate-200 dark:border-slate-700"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Icon",
+          "props": {
+            "name": "lock",
+            "size": "xl",
+            "className": "mx-auto text-slate-300 dark:text-slate-600 mb-3"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-slate-500 dark:text-slate-400"
+          },
+          "text": "$t:board.no_comment_write_permission"
+        }
+      ]
+    },
+    {
+      "partial": "partials/board/show/_comment_input.json"
+    }
+  ]
+}

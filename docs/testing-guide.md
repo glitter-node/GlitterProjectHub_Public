@@ -1,0 +1,1408 @@
+# 그누보드7 테스트 가이드
+
+> 이 문서는 그누보드7의 테스트 작성 및 실행 규칙을 상세히 설명합니다.
+
+---
+
+## TL;DR (5초 요약)
+
+```text
+1. 테스트 통과 = 작업 완료 (작성만으로 불충분!)
+2. 신규 기능 = 시나리오 매니페스트(`tests/scenarios/<feature>.yaml`) 작성 + 입력 axis cross product + 후속 효과 체인 전수 검증
+3. 도메인 분류(§도메인별 테스트 전략)는 파일 패턴별 위치/형식 가이드 — 단, 매니페스트 의무는 모든 신규 기능에 적용
+4. 버그 수정은 "먼저 실패하는 회귀 테스트 작성 → fail 확인 → 수정 → green" 4단계 필수
+5. 테스트 실행 중 발견한 무관 에러도 같은 세션에서 함께 처리 (stale test 수정 or 로직 수정)
+6. 릴리스 전 composer test-smoke 통과 필수 (Installation 스위트)
+7. 백엔드: php artisan test --filter=TestName / _bundled 확장은 _bundled에서 직접 실행
+```
+
+---
+
+## 목차
+
+- [기능 단위 시나리오 매트릭스](#기능-단위-시나리오-매트릭스)
+- [도메인별 테스트 전략 매트릭스](#도메인별-테스트-전략-매트릭스)
+- [Pre-release Smoke Suite](#pre-release-smoke-suite)
+- [버그 수정 시 회귀 테스트 의무](#버그-수정-시-회귀-테스트-의무)
+- [테스트 실행 중 발견한 무관 에러 처리](#테스트-실행-중-발견한-무관-에러-처리)
+- [필수 원칙](#필수-원칙)
+- [모듈/플러그인 프론트엔드 테스트 독립성](#모듈플러그인-프론트엔드-테스트-독립성)
+- [DDL 트랜잭션 격리 문제](#ddl-트랜잭션-격리-문제)
+- [테스트 작성 패턴](#테스트-작성-패턴)
+- [체크리스트](#체크리스트)
+
+---
+
+## _bundled 확장 직접 테스트
+
+```
+✅ _bundled 디렉토리에서 PHPUnit/Vitest 직접 실행 가능
+✅ 활성 디렉토리(modules/vendor-module/)로 복사 불필요
+✅ tests/bootstrap.php가 _bundled를 자동으로 우선 오토로드
+프로덕션 반영은 별도로 module:update 필요 (테스트만 직접 가능)
+```
+
+### 백엔드 (PHPUnit)
+
+```bash
+# _bundled 모듈 전체 테스트
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests
+
+# _bundled 모듈 특정 테스트
+php vendor/bin/phpunit --filter=ShippingPolicyControllerTest modules/_bundled/sirsoft-ecommerce/tests
+
+# _bundled 플러그인 테스트
+php vendor/bin/phpunit plugins/_bundled/sirsoft-tosspayments/tests
+```
+
+### 프론트엔드 (Vitest)
+
+```bash
+# _bundled 모듈 디렉토리에서 직접 실행
+cd modules/_bundled/sirsoft-ecommerce
+powershell -Command "npm run test:run"
+```
+
+### 동작 원리
+
+`tests/bootstrap.php`가 `_bundled` 디렉토리의 코드를 활성 디렉토리보다 먼저 등록(prepend)합니다:
+
+1. `_bundled` module.php/plugin.php → classmap 선점 (require_once)
+2. `_bundled` src/ → PSR-4 prepend 등록 (활성 디렉토리보다 우선 검색)
+3. `autoload-extensions.php` → 이미 로드된 _bundled 항목은 스킵
+4. Manager/RouteServiceProvider → `class_exists` 가드로 중복 선언 방지
+
+### 주의사항
+
+```
+_bundled 테스트 통과 ≠ 프로덕션 반영 완료
+✅ 프로덕션 반영: module:update / plugin:update 커맨드 필수
+_bundled 코드 변경 시 module.json 버전 올리기 필수 (업데이트 감지용)
+```
+
+---
+
+## 확장 테스트 베이스 클래스
+
+```
+필수: 모듈 → ModuleTestCase, 플러그인 → PluginTestCase 상속 (Tests\TestCase 직접 상속 금지)
+```
+
+모듈/플러그인의 모든 테스트 클래스는 해당 확장이 제공하는 `ModuleTestCase` 또는 `PluginTestCase`를 상속해야 합니다. `Tests\TestCase`를 직접 상속하면 확장의 마이그레이션이 실행되지 않아 DB 테이블 부재 에러가 발생합니다.
+
+### 올바른 패턴
+
+```php
+// ✅ 모듈 테스트
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+
+class OrderActivityLogListenerTest extends ModuleTestCase
+{
+    // ModuleTestCase가 마이그레이션, 오토로드, ServiceProvider 등록을 자동 처리
+}
+
+// ✅ 플러그인 테스트
+use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
+
+class PaymentServiceTest extends PluginTestCase
+{
+    // PluginTestCase가 마이그레이션, 오토로드, ServiceProvider 등록을 자동 처리
+}
+```
+
+### 잘못된 패턴
+
+```php
+// ❌ Tests\TestCase 직접 상속 → 확장 마이그레이션 미실행 → DB 테이블 부재 에러
+use Tests\TestCase;
+
+class OrderActivityLogListenerTest extends TestCase
+{
+    // Order::whereIn() 호출 시 "Base table or view not found" 에러 발생
+}
+```
+
+### ModuleTestCase/PluginTestCase가 제공하는 기능
+
+| 기능 | 설명 |
+|------|------|
+| 마이그레이션 | 코어 + 확장 마이그레이션 자동 실행 |
+| 오토로드 | 확장 네임스페이스 PSR-4 등록 |
+| ServiceProvider | Repository 바인딩 등 확장 서비스 등록 |
+| 라우트 | 확장 API 라우트 등록 |
+| 기본 역할 | admin/user 역할 자동 생성 |
+
+### 위치
+
+| 확장 | 베이스 클래스 위치 |
+|------|-------------------|
+| 모듈 | `modules/_bundled/{identifier}/tests/ModuleTestCase.php` |
+| 플러그인 | `plugins/_bundled/{identifier}/tests/PluginTestCase.php` |
+
+---
+
+## 확장 마이그레이션 자동 로드 (requiredExtensions)
+
+코어 테스트에서 확장(모듈/플러그인)의 DB 테이블이 필요한 경우, `$requiredExtensions` 프로퍼티를 선언합니다.
+`RefreshDatabase`의 `migrate:fresh` 실행 시 해당 확장의 마이그레이션도 함께 실행됩니다.
+
+```php
+class ResourceAbilitiesTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /**
+     * sirsoft-marketing 플러그인이 User 리소스 훅에 개입하므로 마이그레이션 필요
+     */
+    protected array $requiredExtensions = [
+        'plugins/sirsoft-marketing',
+    ];
+}
+```
+
+### 경로 형식
+
+프로젝트 루트 기준 상대 경로로, `database/migrations` 디렉토리가 자동 추가됩니다:
+
+| 선언값 | 실제 로드 경로 |
+|--------|---------------|
+| `'plugins/sirsoft-marketing'` | `plugins/sirsoft-marketing/database/migrations` |
+| `'modules/sirsoft-ecommerce'` | `modules/sirsoft-ecommerce/database/migrations` |
+| `'plugins/_bundled/sirsoft-marketing'` | `plugins/_bundled/sirsoft-marketing/database/migrations` |
+
+### 동작 원리
+
+`TestCase::setUpTraits()`에서 `RefreshDatabase::refreshDatabase()` 호출 전에 확장 마이그레이션 경로를 `migrator`에 등록합니다:
+
+1. `setUpTraits()` → `loadExtensionMigrations()` (확장 경로 등록)
+2. `parent::setUpTraits()` → `RefreshDatabase::refreshDatabase()` → `migrate:fresh` (코어 + 확장 함께 실행)
+
+### 주의사항
+
+```
+afterApplicationCreated()는 setUpTraits() 이후 실행되므로 마이그레이션 등록에 사용 불가
+beforeRefreshingDatabase()는 RefreshDatabase 트레이트가 부모 클래스 메서드를 가리므로 사용 불가
+✅ setUpTraits() 오버라이드가 유일하게 작동하는 훅 포인트
+```
+
+---
+
+## 기능 단위 시나리오 매트릭스
+
+```text
+필수: 신규 기능 또는 도메인 표면 변경 시 시나리오 매니페스트 작성/갱신 (tests/scenarios/<feature>.yaml)
+필수: 매니페스트의 입력 axis cross product 와 후속 효과 체인을 모두 테스트로 커버
+의의: OrderCalc 수준 = 단순 분기 망라가 아니라 "기능에 영향을 주는 모든 도메인 변수 조합 + 모든 부수효과" 검증
+```
+
+### 매니페스트 의무 트리거
+
+다음 변경 중 하나라도 있으면 매니페스트 작성/갱신:
+
+1. 새 라우트 등록 (`routes/**`, 모듈/플러그인 `routes/`)
+2. 새 Service public 메서드 (도메인 행위)
+3. 새 Event 발행 / Hook 등록 / Listener 등록
+4. 새 Controller action
+5. 결제/배송/쿠폰/마일리지/주문/회원 등 핵심 도메인 표면 변경
+6. 새 모듈/플러그인의 도메인 기능 추가
+
+매니페스트 면제(트리거 외): 단순 리팩토링, 번역 키 추가, 렌더링/스타일 수정, DTO 필드 추가만, 테스트 코드 자체 수정.
+
+### 매니페스트 위치
+
+| 범위 | 위치 |
+|------|------|
+| 코어 기능 | `tests/scenarios/<feature>.yaml` |
+| 모듈 기능 | `modules/_bundled/<id>/tests/scenarios/<feature>.yaml` |
+| 플러그인 기능 | `plugins/_bundled/<id>/tests/scenarios/<feature>.yaml` |
+
+### 매니페스트 양식
+
+```yaml
+feature: order_payment_pg_toss
+description: 토스 PG 를 통한 주문 결제 흐름
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Payment/TossPgPaymentTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/WebhookTest.php
+
+# 입력 axis — 모든 조합이 테스트로 커버되어야 함
+axes:
+  user_type: [member, guest]
+  mileage_enabled: [true, false]
+  product_options: [single, multi_option, bundle]
+  shipping_region: [domestic, jeju, remote_island]
+  shipping_policy: [free, fixed, range_based, conditional_free]
+  coupon_applied: [none, product, category, all]
+  currency: [krw, usd_with_fx]
+  rounding_unit: [1, 10, 100]
+
+# cross product 에서 의미 없는 조합 — 명시적 컷
+exclusions:
+  - { user_type: guest, mileage_enabled: true, reason: "비회원은 마일리지 사용 불가" }
+
+# 후속 효과 체인 — 각 단계가 테스트에서 검증되어야 함
+effects:
+  - webhook_received
+  - payment_approved
+  - mileage_deducted
+  - notification_sent_to_user
+  - notification_amount_matches_total
+  - vat_calculated
+  - tax_free_amount_split
+  - coupon_marked_used
+  - inventory_decremented
+
+# 보조 흐름 (취소/환불 등)
+sub_flows:
+  - id: partial_cancel
+    effects: [shipping_policy_recalculated, discount_recalculated, mileage_partial_refunded]
+  - id: full_cancel
+    effects: [payment_voided, mileage_fully_refunded, coupon_unused, inventory_restored]
+```
+
+### 테스트 ↔ 매니페스트 매핑 규약
+
+테스트 메서드 docblock 에 axis 값과 검증한 effects 를 표기:
+
+```php
+/**
+ * @scenario user_type=member, mileage_enabled=true, product_options=single,
+ *           shipping_region=jeju, shipping_policy=fixed, coupon_applied=product,
+ *           currency=krw, rounding_unit=10
+ * @effects payment_approved, mileage_deducted, notification_sent_to_user,
+ *          notification_amount_matches_total, vat_calculated, coupon_marked_used,
+ *          inventory_decremented
+ */
+public function test_pg_payment_member_with_mileage_to_jeju(): void { ... }
+```
+
+TypeScript 테스트는 `// @scenario` / `// @effects` 주석 동일 사용.
+
+audit rule `test-scenario-coverage` 가 매니페스트 cross product 와 effects 항목을 테스트 docblock 마킹과 대조하여 누락을 검출 (자동 차단).
+
+### cross product 폭발 관리
+
+축이 많아 cross product 가 비현실적으로 커질 때:
+
+1. `exclusions` 로 의미 없는 조합 제외 (이유 명시 필수)
+2. **Pairwise (all-pairs)** 전략 허용: 매니페스트에 `coverage_strategy: pairwise` 명시 시 모든 axis 쌍의 모든 조합만 커버 (n축 → O(n²) 케이스). 단순 분기형 axis(true/false) 가 많을 때 유효
+3. 그래도 폭발하면 **상위 axis 분리**: 매니페스트를 도메인별로 분할 (예: `order_payment_pg_toss_member.yaml`, `order_payment_pg_toss_guest.yaml`)
+
+### 작성 절차
+
+1. 영향 변수 카탈로그 식별
+2. 후속 효과 체인 매핑 (Event::dispatch / Notification::send / DB 변이 / 외부 호출 전수 열거)
+3. 의미 없는 조합 컷 (`exclusions`)
+4. 매니페스트 YAML 작성
+5. 매니페스트의 cross product 에 대해 테스트 메서드 작성 → `php artisan test --filter=...` green
+
+### grandfathered
+
+본 정책 도입 이전 작성된 테스트는 매니페스트 사후 작성 의무 없음. 단, 해당 기능을 다시 수정/확장할 때는 본 정책에 따라 매니페스트 신규 작성 의무 발생.
+
+---
+
+## 도메인별 테스트 전략 매트릭스
+
+```text
+필수: 테스트 작성 전 대상 파일의 도메인을 먼저 분류할 것 (테스트 위치/형식 가이드)
+참고: 본 매트릭스는 테스트 파일 위치·작성 형식 가이드. 입력 조합 망라 의무는 §기능 단위 시나리오 매트릭스 참조
+```
+
+### 4개 도메인 분류
+
+| 도메인 | 파일명 패턴 | 성격 | 필수 테스트 유형 | 참고 모범사례 |
+|--------|-------------|------|------------------|---------------|
+| **Pure Logic** | `*Calculator`, `*Policy`, `*Rule`, `*PricingService`, `*CalculationService` | 입력→출력 결정론 | 테이블 드리븐 + 경계값 + axis cross product (매니페스트 의무) | `modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php` |
+| **CRUD/Repository** | `*Repository`, `*Service` (CRUD 위주) | DB 상태 변이 | 마이그레이션 실행 후 Feature 테스트 1회전 (golden path + 권한 경계) | `modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagementTest.php` |
+| **Hook/Event** | `*Listener`, `*Subscriber`, Hook 발행 Service | 사이드이펙트 | Event 발행 → Listener 실행 → 관찰 가능한 상태 변화 검증 (mock 금지, 실제 훅 체인) | `modules/_bundled/sirsoft-board/tests/Unit/Listeners/CountSyncListenerTest.php` |
+| **Migration** | `database/migrations/*`, 모듈/플러그인 migrations | 스키마 변이 | up → down → up 왕복 + 영향받는 Repository/Service 호출처 1회전 | `tests/Feature/Installation/BoardFreshInstallTest.php` |
+
+### 분류 결정 순서
+
+1. **파일명 패턴 매칭** — 위 표의 패턴과 일치하면 그 도메인으로 분류
+2. **불명확한 경우** — "테스트로 검증할 불변식(invariant)"을 기준으로 판단:
+   - 입력→출력 결정론 ⇒ Pure Logic
+   - DB/파일 상태 변이 ⇒ CRUD/Repository
+   - 이벤트/훅 기반 사이드이펙트 ⇒ Hook/Event
+3. **하나의 서비스가 여러 도메인에 걸칠 때** — 메서드 단위로 분류해서 각각에 맞는 테스트 유형 적용
+
+### 도메인별 작성 지침
+
+**Pure Logic**:
+
+- 모든 분기/경계값을 DataProvider로 전수 커버
+- 외부 의존성 0 (DB, HTTP, 파일시스템 호출 금지)
+- assert는 반환값 + 예외 타입까지 명시
+
+**CRUD/Repository**:
+
+- `RefreshDatabase` 트레이트 + 실제 마이그레이션 실행
+- golden path 1개 + 권한 실패 1개 + 유효성 실패 1개가 최소 세트
+- DB 스키마 가정을 assertion에 포함 (`assertDatabaseHas` 등)
+
+**Hook/Event**:
+
+- mock이 아닌 실제 이벤트 발행(`event(new XxxEvent(...))`)
+- Listener 동작 후 DB/캐시/상태 변화를 직접 조회하여 검증
+- 훅 체인이 끊어지면 회귀하는 카운터, 권한, 정합성 지표를 검증 대상으로
+
+**Migration**:
+
+- `migrate` → `migrate:rollback` → `migrate` 왕복 안전성 테스트
+- 기존 스키마를 변경(drop/rename)하는 마이그레이션은 영향받는 Repository 호출 1회전 필수 포함
+- 스키마 변경이 데이터 유실을 동반한다면 별도 데이터 보존 테스트 필요
+
+---
+
+## Pre-release Smoke Suite
+
+```text
+필수: 릴리스 태깅 전 composer test-smoke 통과 필수
+목적: 마이그레이션 + 모듈 설치 + 핵심 사용자 여정 end-to-end 검증
+대상: Clean install, 업그레이드 경로, 번들 모듈 핵심 시나리오
+```
+
+### 구성
+
+```text
+tests/Feature/Installation/
+├── FreshInstallSmokeTest.php          # 마이그레이션 전수 실행 + 코어 헬스체크
+├── BoardFreshInstallTest.php          # 게시판 create → post → comment 1회전
+├── EcommerceFreshInstallTest.php      # 상품 생성 → 주문 → 결제 mock 1회전
+└── UpgradeSmokeTest.php               # 이전 릴리스 시드 → 최신 마이그레이션 → 기존 데이터 접근 1회전
+```
+
+### 각 테스트 최소 요구사항
+
+- `RefreshDatabase` + 실제 migrations 전수 실행 (mock DB 금지)
+- 모듈/플러그인 install artisan 커맨드 호출
+- 해당 도메인의 사용자 여정 1개를 end-to-end로 실행 (HTTP 레이어까지)
+- 각 단계에 명확한 assertion (`assertTrue(true)` 같은 무의미 assert 금지)
+
+### 실행
+
+```bash
+# 전체 스모크 스위트
+composer test-smoke
+
+# CI 모드 (첫 실패에서 중단)
+composer test-smoke-ci
+
+# 특정 스모크 테스트만
+php artisan test tests/Feature/Installation/BoardFreshInstallTest.php
+```
+
+### 릴리스 전 체크리스트
+
+- [ ] `composer test-smoke` 통과
+- [ ] `config/app.php` 버전 bump와 동시에 CHANGELOG 기록
+- [ ] Installation 테스트에서 새 마이그레이션 경로가 커버되는지 확인
+
+---
+
+## 버그 수정 시 회귀 테스트 의무
+
+```text
+필수: 버그 수정 작업은 4단계 순서 준수 (스킵 불가)
+금지: 회귀 테스트 없이 로직만 수정하고 완료 선언
+이유: 테스트 없는 수정은 동일 회귀를 반복 발생시킴 (beta.2 #11 사례)
+```
+
+### 4단계 절차
+
+```text
+1. 재현 → 먼저 실패하는 회귀 테스트 작성 (fail 확인 필수)
+2. 그 테스트가 수정 대상 파일의 도메인에 맞는 유형인지 확인 (§도메인별 테스트 전략 매트릭스)
+3. 버그 수정 → 테스트 green 전환
+4. 완료 보고에 "회귀 테스트 파일 경로 + 커밋 전 fail 상태 증빙" 포함
+```
+
+### 도메인별 회귀 테스트 위치
+
+| 버그 유형 | 회귀 테스트 작성 위치 |
+|----------|----------------------|
+| 순수 로직 버그 | `tests/Unit/Services/*Test.php` 또는 확장의 동등 위치 |
+| CRUD/API 버그 | `tests/Feature/*Test.php` |
+| 훅/카운터 동기화 버그 | `tests/Unit/Listeners/*Test.php` |
+| 마이그레이션–Repository 결합 버그 | `tests/Feature/Installation/*Test.php` (스모크 스위트 포함) |
+
+### 예시 — #11 회귀 테스트 패턴
+
+```php
+// ❌ 버그 수정만 하고 끝내는 패턴 (금지)
+// BoardPostService::incrementCommentCount() 수정하고 완료 선언
+
+// ✅ 회귀 테스트 먼저 작성
+#[Test]
+public function comment_count_updates_after_comment_creation(): void
+{
+    $post = BoardPost::factory()->create(['comment_count' => 0]);
+
+    // 댓글 생성 (실제 HTTP 호출 or Service 직접 호출)
+    $this->postJson("/api/boards/{$post->board_id}/posts/{$post->id}/comments", [
+        'content' => '테스트 댓글',
+    ])->assertStatus(201);
+
+    // ⚠️ 수정 전에는 이 assertion이 실패해야 함
+    $this->assertSame(1, $post->fresh()->comment_count);
+}
+```
+
+---
+
+## 테스트 실행 중 발견한 무관 에러 처리
+
+```text
+필수: 테스트 실행 중 확인된 FAIL/ERROR는 현재 작업과 무관해도 같은 세션에서 함께 해결
+금지: "별건이라 나중에 수정"하고 세션 종료
+이유: 세션을 넘기면 휘발되는 정보. 발견 즉시 처리가 가장 효율적
+```
+
+### 의사결정 분기
+
+```text
+테스트 실행 → 실패/경고 감지
+       │
+       ├─ 실패 원인이 "테스트 코드가 현행 로직을 따라가지 못함"
+       │  → 테스트 코드 수정 (stale test 정비)
+       │  → 판정 근거: git blame + 해당 로직 변경 시점 비교
+       │
+       ├─ 실패 원인이 "실제 로직의 버그"
+       │  → 로직 수정 + 회귀 테스트 보강 (§버그 수정 시 회귀 테스트 의무의 4단계 적용)
+       │
+       └─ 판별 불가
+          → 별도 판단 필요 (현재 작업 단위 내 결정 의무, 다음 단위 이월 금지)
+```
+
+### 제외 범위 (함께 수정하지 않아도 되는 경우)
+
+- 실패가 **외부 환경 의존**(네트워크 미연결, 빌드 캐시, 서버 인프라)인 경우
+- 실패가 **설계 변경 진행 중**이라 의도적으로 깨진 상태
+  - 단, 기존 작업 계획에 명시된 상태여야 함 (사후 정당화 금지)
+
+### 테스트 결과 보고 필수 필드
+
+테스트 실행 결과에서 FAIL/ERROR/RISKY가 1건 이상이면 각 항목에 대해 다음 필드를 기록:
+
+| 필드 | 값 예시 | 설명 |
+|------|---------|------|
+| 연관 여부 | YES / NO / UNCLEAR | 현재 작업 스코프와의 연관성 |
+| 판정 근거 | 커밋 해시, 파일 경로, 변경 시점 | git blame/log 기반 증거 |
+| 조치 분기 | 테스트 수정 / 로직 수정 / 보류 | 의사결정 분기 결과 |
+
+### 범위
+
+- 현재 작업 디렉토리에서 실행한 테스트 스위트 내 FAIL만 대상
+- 다른 모듈/디렉토리까지 강제로 확장하지 않음 (작업 부하 관리)
+
+---
+
+## 필수 원칙
+
+```
+필수: 테스트 통과 = 작업 완료 (작성만으로 불충분)
+```
+
+---
+
+## 모듈/플러그인 프론트엔드 테스트 독립성
+
+```
+필수: 각 모듈/플러그인은 독립적인 vitest.config.ts를 가짐 (루트 vitest.config에 포함 금지)
+필수: 테스트는 해당 모듈/플러그인 디렉토리에서 실행
+```
+
+### 원칙
+
+모듈과 플러그인은 **독립적인 확장 단위**입니다. 프론트엔드 테스트 역시 코어 프로젝트와 분리되어야 합니다:
+
+1. **루트 vitest.config.ts에 모듈/플러그인 경로 포함 금지**
+2. **각 모듈/플러그인은 자체 테스트 환경 구성**
+3. **테스트는 해당 디렉토리에서 독립 실행**
+
+### 필수 파일 구성
+
+모듈/플러그인에 프론트엔드 테스트가 필요한 경우 다음 파일을 구성합니다:
+
+**1. vitest.config.ts**
+
+```typescript
+// modules/[vendor-module]/vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import path from 'path';
+import fs from 'fs';
+
+// 프로젝트 루트를 동적으로 탐색 (artisan 파일 기준)
+// _bundled와 활성 디렉토리 모두에서 동작합니다.
+function findProjectRoot(startDir: string): string {
+    let dir = startDir;
+    while (dir !== path.dirname(dir)) {
+        if (fs.existsSync(path.join(dir, 'artisan'))) return dir;
+        dir = path.dirname(dir);
+    }
+    return path.resolve(startDir, '../../'); // fallback
+}
+
+const projectRoot = findProjectRoot(__dirname);
+
+export default defineConfig({
+    test: {
+        globals: true,
+        environment: 'node',
+        include: ['resources/js/**/*.{test,spec}.{ts,tsx}'],
+        exclude: ['node_modules/', 'dist/'],
+    },
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, 'resources/js'),
+            '@core': path.resolve(projectRoot, 'resources/js/core'),
+        },
+    },
+});
+```
+
+**2. package.json 테스트 스크립트**
+
+```json
+{
+    "name": "@g7/[vendor-module]",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "test": "vitest",
+        "test:run": "vitest run"
+    },
+    "devDependencies": {
+        "vitest": "^2.1.8"
+    }
+}
+```
+
+### 테스트 파일 위치
+
+```
+modules/[vendor-module]/
+├── resources/
+│   └── js/
+│       ├── handlers/
+│       │   ├── index.ts
+│       │   ├── someHandler.ts
+│       │   └── __tests__/
+│       │       └── someHandler.test.ts    # ← 테스트 파일
+│       └── utils/
+│           ├── someUtil.ts
+│           └── __tests__/
+│               └── someUtil.test.ts       # ← 테스트 파일
+├── package.json
+└── vitest.config.ts
+```
+
+### 테스트 실행 방법
+
+```bash
+# ✅ DO: _bundled 모듈 디렉토리에서 직접 실행
+cd modules/_bundled/sirsoft-ecommerce
+npm install       # 최초 1회
+npm run test:run  # 테스트 실행
+
+# ✅ DO: _bundled 모듈에서도 직접 실행 가능
+cd modules/_bundled/sirsoft-ecommerce
+npm install       # 최초 1회
+powershell -Command "npm run test:run"
+
+# ❌ DON'T: 루트에서 모듈 테스트 실행 시도
+cd /path/to/g7
+npm run test:run -- modules/sirsoft-ecommerce  # 작동 안함
+```
+
+### 의존성 설치
+
+모듈/플러그인에서 테스트를 처음 실행하기 전 의존성을 설치합니다:
+
+```bash
+cd modules/_bundled/[vendor-module]
+npm install
+```
+
+### 왜 독립적이어야 하는가?
+
+1. **확장 단위의 독립성**: 모듈/플러그인은 언제든 설치/삭제될 수 있는 독립 단위
+2. **루트 설정 오염 방지**: 특정 모듈 경로가 루트 설정에 하드코딩되면 유지보수 어려움
+3. **테스트 격리**: 각 모듈/플러그인의 테스트가 서로 영향을 주지 않음
+4. **배포 독립성**: 모듈 배포 시 테스트 환경도 함께 배포
+
+### 체크리스트
+
+```
+□ 모듈/플러그인에 vitest.config.ts 존재하는가?
+□ package.json에 test 스크립트가 있는가?
+□ devDependencies에 vitest가 있는가?
+□ npm install 실행했는가?
+□ 해당 디렉토리에서 테스트 실행하는가?
+```
+
+### 주의 사항
+
+```
+루트 vitest.config.ts에 modules/plugins 경로 추가 금지
+모듈/플러그인 테스트는 해당 디렉토리에서만 실행
+모듈/플러그인 테스트 설정은 독립적으로 구성
+```
+
+---
+
+## 환경 격리 — Shared Settings 파일 주의
+
+### 배경
+
+`storage/app/settings/*.json` 파일(특히 `drivers.json`)은 dev / testing 환경이 **공유**하는 파일입니다. `SettingsServiceProvider::register()`가 부팅 시 이 파일을 읽어 `cache.default`, `session.driver`, `queue.default` 등을 runtime에 오버라이드합니다.
+
+### 발생했던 문제
+
+과거에는 `SettingsServiceProvider::applyDriverConfig()`가 testing 환경에서도 이 오버라이드를 적용하여, `phpunit.xml`이 지정한 `CACHE_STORE=array` 설정이 무효화되고 testing이 dev의 **Redis 인스턴스와 프리픽스를 공유**했습니다. 그 결과:
+
+1. 테스트가 `RefreshDatabase`로 `notification_definitions` 테이블을 truncate
+2. 부팅 중 `NotificationDefinitionService::getAllActive()` 호출 → 빈 컬렉션
+3. 빈 컬렉션이 dev Redis에 cached
+4. 이후 dev 요청이 이 stale 빈 캐시를 읽어 `NotificationHookListener::registerDynamicHooks()`가 어떤 훅도 등록하지 못함
+5. **알림이 silent하게 발송 실패**
+
+### 현재 보호 장치
+
+`SettingsServiceProvider::applyDriverConfig()`는 `env('APP_ENV') === 'testing'`에서 cache/session/queue 드라이버 오버라이드를 **건너뜁니다**. testing 환경은 `phpunit.xml` + `.env.testing`이 지정한 드라이버를 그대로 사용합니다.
+
+### 지침
+
+```text
+⚠️ testing 환경은 dev의 Redis/DB/file 캐시를 절대 공유하지 않아야 함
+
+✅ phpunit.xml: CACHE_STORE=array (in-memory, per-process)
+✅ .env.testing: CACHE_STORE=file 또는 array
+❌ drivers.json 오버라이드는 testing에서 비활성화됨 (SettingsServiceProvider 내 가드)
+```
+
+**향후 변경 시 주의**: `SettingsServiceProvider`에 새 드라이버 오버라이드를 추가할 때, shared 파일 경로(storage/app/settings)에서 읽는다면 testing 환경 가드를 반드시 포함할 것.
+
+---
+
+## DDL 트랜잭션 격리 문제
+
+### 문제 설명
+
+모듈/플러그인/템플릿 설치 테스트에서 `Artisan::call('migrate')`가 실행되면 MySQL의 DDL(Data Definition Language) 문이 **암시적 커밋(implicit commit)**을 유발하여 RefreshDatabase 트랜잭션이 깨집니다.
+
+```
+주의: DDL(CREATE TABLE 등)은 MySQL에서 암시적 커밋을 유발
+필수: DDL 테스트는 하나의 메서드로 통합 (개별 분리 시 각 12-14초 소요)
+```
+
+### 영향받는 테스트 유형
+
+| 테스트 유형 | DDL 유발 | 해결 방법 |
+|-------------|----------|----------|
+| 모듈 install/activate/deactivate/uninstall | ✅ | 하나의 테스트로 통합 |
+| 플러그인 install/activate/deactivate/uninstall | ✅ | 하나의 테스트로 통합 |
+| 템플릿 install/activate | ✅ | 하나의 테스트로 통합 |
+| 일반 CRUD 테스트 | ❌ | 개별 테스트 유지 |
+| 캐시/리스트 테스트 | ❌ | 개별 테스트 유지 |
+
+### 올바른 패턴
+
+```php
+// ❌ BAD: 개별 테스트 (각각 12-14초, 총 48초+)
+public function test_install_module(): void { ... }      // 12s
+public function test_activate_module(): void { ... }     // 12s
+public function test_deactivate_module(): void { ... }   // 12s
+public function test_uninstall_module(): void { ... }    // 12s
+
+// ✅ GOOD: 통합 테스트 (전체 1-2초)
+public function test_module_lifecycle_workflow(): void
+{
+    // Part 1: 미설치 상태 실패 케이스
+    $this->artisan('module:activate', ['identifier' => $id])->assertExitCode(1);
+
+    // Part 2: 설치 워크플로우
+    $this->artisan('module:install', ['identifier' => $id])->assertExitCode(0);
+    $this->assertDatabaseHas('modules', ['identifier' => $id]);
+
+    // Part 3: 활성화/비활성화 워크플로우
+    $this->artisan('module:activate', ['identifier' => $id])->assertExitCode(0);
+    $this->artisan('module:deactivate', ['identifier' => $id])->assertExitCode(0);
+
+    // Part 4: 삭제 워크플로우
+    $this->artisan('module:uninstall', ['identifier' => $id, '--force' => true])
+        ->assertExitCode(0);
+}
+```
+
+### 테스트 클래스 구조
+
+```php
+class ModuleArtisanCommandsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    // ========================================
+    // Non-DDL 테스트: 개별 메서드로 유지 (빠름)
+    // ========================================
+
+    public function test_list_command(): void { ... }           // 0.1s
+    public function test_cache_clear_command(): void { ... }    // 0.1s
+    public function test_nonexistent_module_fails(): void { ... } // 0.1s
+
+    // ========================================
+    // DDL 통합 테스트: 반드시 하나의 메서드로!
+    // test_z_ 접두사로 마지막에 실행
+    // ========================================
+
+    /**
+     * DDL 유발: 모듈 설치 시 마이그레이션 실행
+     *
+     * 모든 install/activate/deactivate/uninstall 시나리오를
+     * 하나의 테스트에서 순차 실행
+     */
+    public function test_z_module_commands_full_workflow(): void
+    {
+        // Part 1: 미설치 상태 실패 케이스
+        // Part 2: 설치 워크플로우
+        // Part 3: 활성화/비활성화 워크플로우
+        // Part 4: 삭제 워크플로우
+        // Part 5: --force 옵션 테스트
+        // Part 6: 전체 라이프사이클
+    }
+}
+```
+
+### 참고 자료
+
+- [MySQL Implicit Commit](https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html)
+- 예시 파일: `tests/Feature/Console/Commands/Module/ModuleArtisanCommandsTest.php`
+
+---
+
+## 템플릿 엔진 테스트 필수화
+
+```
+필수: 템플릿 엔진 또는 컴포넌트 수정 시 테스트 포함 (테스트 없이 작업 완료 불가)
+```
+
+### 적용 범위
+
+다음 작업 수행 시 **반드시** 테스트 코드 작업이 포함되어야 합니다:
+
+| 작업 유형 | 테스트 요구사항 |
+|----------|----------------|
+| 템플릿 엔진 버그 수정 | 해당 버그를 재현하는 테스트 케이스 추가 |
+| 템플릿 엔진 기능 추가 | 새 기능에 대한 테스트 케이스 작성 |
+| 컴포넌트 props 변경 | 변경된 props에 대한 테스트 수정/추가 |
+| 컴포넌트 동작 변경 | 변경된 동작에 대한 테스트 수정/추가 |
+| 새 컴포넌트 추가 | 해당 컴포넌트의 테스트 파일 생성 |
+| Action/Handler 수정 | ActionDispatcher 등 관련 테스트 수정/추가 |
+
+### 테스트 파일 위치
+
+```
+/resources/js/core/template-engine/
+├── ActionDispatcher.ts
+├── __tests__/
+│   └── ActionDispatcher.test.ts    # ← 테스트 파일
+
+/templates/sirsoft-admin_basic/
+├── src/components/
+│   ├── basic/
+│   │   └── __tests__/              # ← basic 컴포넌트 테스트
+│   ├── composite/
+│   │   └── __tests__/              # ← composite 컴포넌트 테스트
+│   └── layout/
+│       └── __tests__/              # ← layout 컴포넌트 테스트
+```
+
+### 테스트 작성 규칙
+
+**1. 버그 수정 시 (TDD 권장)**
+
+```typescript
+// 1. 먼저 버그를 재현하는 테스트 작성 (실패 확인)
+it('should handle URL query parameters correctly', () => {
+  // 버그 재현 코드
+});
+
+// 2. 버그 수정
+// 3. 테스트 통과 확인
+```
+
+**2. 기능 추가 시**
+
+```typescript
+describe('NewFeature', () => {
+  it('should perform expected behavior', () => {
+    // 새 기능 테스트
+  });
+
+  it('should handle edge cases', () => {
+    // 엣지 케이스 테스트
+  });
+});
+```
+
+**3. 컴포넌트 수정 시**
+
+```typescript
+// 기존 테스트가 있으면 수정
+// 없으면 새로 생성
+describe('ModifiedComponent', () => {
+  it('should render with new props', () => {
+    // 변경된 props 테스트
+  });
+});
+```
+
+### 테스트 실행 명령어
+
+```text
+✅ 프론트엔드 테스트는 루트 또는 템플릿 디렉토리에서 실행 가능
+✅ 템플릿은 자체 vitest.config.ts를 가지며 루트 setup/alias 참조
+✅ 코어 테스트(template-engine)는 루트에서 실행
+❌ DON'T: --testPathPattern 옵션 사용 (Jest 전용, Vitest에서는 동작 안함)
+```
+
+### 컴포넌트 테스트
+
+**템플릿 디렉토리에서 실행 (권장)**:
+
+```bash
+# 템플릿 디렉토리에서 해당 템플릿 테스트만 실행
+cd templates/_bundled/sirsoft-admin_basic
+powershell -Command "npm run test:run"                    # 전체 테스트
+powershell -Command "npm run test:run -- DataGrid"        # 특정 테스트
+powershell -Command "npm run test:run -- SortableMenuItem"
+```
+
+**프로젝트 루트에서 실행**:
+
+```bash
+# 모든 테스트 (코어 + 모든 템플릿)
+powershell -Command "npm run test:run"
+
+# 특정 템플릿만
+powershell -Command "npm run test:run -- templates/_bundled/sirsoft-admin_basic"
+
+# 특정 테스트 필터
+powershell -Command "npm run test:run -- DataGrid"
+```
+
+**코어 템플릿 엔진 테스트 (루트에서만 실행)**:
+
+```bash
+# 템플릿 엔진 코어는 루트에서 실행
+powershell -Command "npm run test:run -- template-engine"
+powershell -Command "npm run test:run -- Router"
+```
+
+**잘못된 사용법**:
+
+```bash
+# ❌ DON'T: --testPathPattern 옵션 사용 (Vitest에서 지원하지 않음)
+npm run test:run -- --testPathPattern=Router  # 잘못된 명령
+```
+
+**템플릿별 vitest.config.ts 구조**:
+
+각 템플릿은 자체 `vitest.config.ts`를 가지며, 루트의 setup 파일과 alias를 참조합니다:
+- `server.fs.allow`로 루트 디렉토리 접근 허용
+- `setupFiles`에서 루트의 `resources/js/tests/setup.ts` 참조
+- `resolve.alias`에서 `@` → 루트의 `resources/js` 매핑
+
+### 완료 조건 체크리스트
+
+```
+□ 관련 테스트 파일이 존재하는가?
+  → 없으면: 테스트 파일 생성
+  → 있으면: 기존 테스트 검토
+
+□ 변경 사항에 대한 테스트가 있는가?
+  → 없으면: 테스트 케이스 추가
+  → 있으면: 테스트가 변경 사항을 커버하는지 확인
+
+□ 모든 테스트가 통과하는가?
+  → 실패: 코드 수정 후 재실행
+  → 통과: 작업 완료 가능
+```
+
+### 테스트 필수 원칙
+
+```
+필수: 코드 수정 시 테스트 포함 후 완료 선언
+필수: 기존 테스트 유지 (삭제/skip 금지)
+필수: 테스트 작성 후 실행까지 완료
+```
+
+### 테스트 커버리지 기준
+
+코어, 모듈, 플러그인 전 영역에 걸쳐 아래 계층별 테스트가 존재해야 합니다.
+
+**백엔드 (PHPUnit)**:
+
+| 계층 | 테스트 대상 | 검증 항목 |
+|------|-----------|----------|
+| Controller (Feature) | API 엔드포인트 | 상태 코드, 응답 구조, abilities, 권한 403 |
+| Resource (Unit) | 직렬화 | 필드 반환, 관계 미로드 시 null, json_encode 안전성 |
+| Collection (Unit) | 목록 직렬화 | abilityMap, resolveCollectionAbilities, pagination |
+| Service (Unit) | 비즈니스 로직 | CRUD, 캐싱, 예외 처리 |
+| Listener (Unit) | 이벤트/훅 처리 | 훅 구독, 데이터 변환 |
+| Upgrade (Unit) | 업그레이드 스텝 | 데이터 이관, 멱등성 |
+
+**프론트엔드 (Vitest)**:
+
+| 계층 | 테스트 대상 | 검증 항목 |
+|------|-----------|----------|
+| 컴포넌트 | TSX 컴포넌트 | 렌더링, props, 이벤트 |
+| 레이아웃 | JSON 레이아웃 | 렌더링, 데이터 바인딩, 액션 |
+
+**신규 기능 구현 시 최소 커버리지**:
+- Controller → Feature 테스트 (정상 + 권한 부족)
+- Resource → json_encode 안전성 (관계 미로드 시나리오 포함)
+- Collection → abilities 반환 검증 (abilityMap 정의 시)
+- Service → 핵심 메서드별 정상/예외 케이스
+
+### 레이아웃 렌더링 테스트 (상세)
+
+레이아웃 JSON 파일을 실제 렌더링하고 런타임 동작을 검증하는 테스트 시스템이 제공됩니다.
+
+> 상세 문서: [frontend/layout-testing.md](frontend/layout-testing.md)
+
+**주요 기능**:
+- `createLayoutTest()`: 레이아웃 테스트 헬퍼 생성
+- `mockApi()`: 데이터소스 API 응답 모킹
+- `getState()` / `setState()`: 상태 관리
+- `triggerAction()`: 액션 트리거
+- `getToasts()` / `getModalStack()`: UI 피드백 추적
+
+**테스트 유틸리티 위치**:
+```text
+resources/js/core/template-engine/__tests__/
+├── utils/
+│   ├── mockApiUtils.ts       # API 모킹 유틸리티
+│   └── layoutTestUtils.ts    # 레이아웃 테스트 헬퍼
+└── layouts/
+    └── example.test.tsx      # 유틸리티 사용 예제 (코어 전용)
+```
+
+**레이아웃 렌더링 테스트 위치**:
+
+```text
+필수: 레이아웃 테스트는 해당 레이아웃이 속한 확장 디렉토리에 작성 (코어 디렉토리에 모듈/템플릿 테스트 배치 금지)
+```
+
+| 레이아웃 소속 | 테스트 파일 위치 |
+|-------------|-----------------|
+| 모듈 레이아웃 | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
+| 템플릿 레이아웃 | `templates/_bundled/{id}/__tests__/layouts/*.test.tsx` |
+| 코어 레이아웃 | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` |
+
+**실행 명령어**:
+```powershell
+# 모듈 레이아웃 테스트
+cd modules/_bundled/sirsoft-ecommerce
+powershell -Command "npm run test:run"
+
+# 템플릿 레이아웃 테스트
+cd templates/_bundled/sirsoft-admin_basic
+powershell -Command "npm run test:run"
+
+# 코어 레이아웃 테스트 (루트에서)
+powershell -Command "npm run test:run -- layouts/example.test"
+```
+
+**완료 조건**:
+```bash
+php artisan test --filter=TargetTest
+
+# 결과: Tests: X passed (Y assertions) - 모든 테스트 성공
+```
+
+**실패 시 대응**:
+1. 에러 메시지 분석
+2. 코드 수정
+3. 재실행
+4. 통과할 때까지 반복
+
+### 테스트 작성 패턴
+
+```php
+<?php
+
+namespace Tests\Feature\Modules\Sirsoft\Ecommerce;
+
+use Tests\TestCase;
+use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\ProductCategory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class ProductApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $adminUser;
+    private ProductCategory $category;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 관리자 사용자 생성
+        $this->adminUser = User::factory()->create();
+        $this->adminUser->assignRole('admin');
+
+        // 카테고리 생성
+        $this->category = ProductCategory::factory()->create();
+    }
+
+    /**
+     * 상품 목록 조회 테스트
+     */
+    public function test_can_list_products(): void
+    {
+        // Arrange
+        Product::factory()->count(5)->create([
+            'category_id' => $this->category->id,
+        ]);
+
+        // Act
+        $response = $this->actingAs($this->adminUser)
+            ->getJson('/api/admin/sirsoft-ecommerce/products');
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    '*' => ['id', 'name', 'price', 'category'],
+                ],
+            ]);
+
+        $this->assertEquals(5, count($response->json('data')));
+    }
+
+    /**
+     * 상품 생성 테스트
+     */
+    public function test_can_create_product(): void
+    {
+        // Arrange
+        $productData = [
+            'name' => '테스트 상품',
+            'description' => '테스트 설명',
+            'price' => 10000,
+            'category_id' => $this->category->id,
+            'is_active' => true,
+        ];
+
+        // Act
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/admin/sirsoft-ecommerce/products', $productData);
+
+        // Assert
+        $response->assertStatus(201)
+            ->assertJsonFragment(['name' => '테스트 상품']);
+
+        $this->assertDatabaseHas('products', [
+            'name' => '테스트 상품',
+            'price' => 10000,
+        ]);
+    }
+
+    /**
+     * 유효성 검증 테스트
+     */
+    public function test_validation_fails_without_required_fields(): void
+    {
+        // Act
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/admin/sirsoft-ecommerce/products', []);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'price', 'category_id']);
+    }
+}
+```
+
+### 체크리스트
+
+**테스트 전**:
+- [ ] 필요한 클래스/메서드 구현 완료
+- [ ] 모델 관계 정의 완료
+- [ ] API 리소스에서 민감 정보 제외
+
+**테스트 중**:
+- [ ] 실패 원인 분석
+- [ ] 코드 수정
+- [ ] 재실행
+
+**테스트 후**:
+- [ ] 모든 테스트 통과 확인
+- [ ] 실패한 테스트 0건
+
+---
+
+## Mockery 사용 규칙
+
+### 인터페이스 타입힌트 필수
+
+```text
+필수: Mock 객체 생성 시 인터페이스/클래스 타입 지정
+잘못된 패턴: Mockery::mock() — 타입 미지정
+올바른 패턴: Mockery::mock(PluginInterface::class)
+```
+
+**문제 상황**: 타입힌트 없는 Mock 객체가 반환 타입이 지정된 메서드에서 반환될 때 TypeError 발생
+
+```php
+// ❌ 문제 코드 - TypeError 발생
+$mockPlugin = Mockery::mock();
+$mockPlugin->shouldReceive('getSettingsSchema')->andReturn([]);
+
+// 에러: Return value must be of type ?PluginInterface, Mockery_3 returned
+```
+
+```php
+// ✅ 올바른 코드
+use App\Contracts\Extension\PluginInterface;
+
+$mockPlugin = Mockery::mock(PluginInterface::class);
+$mockPlugin->shouldReceive('getSettingsSchema')->andReturn([]);
+```
+
+### Mock 객체 생성 패턴
+
+```php
+<?php
+
+namespace Tests\Unit\Services;
+
+use App\Contracts\Extension\PluginInterface;
+use App\Extension\PluginManager;
+use Mockery;
+use Tests\TestCase;
+
+class PluginServiceTest extends TestCase
+{
+    protected function tearDown(): void
+    {
+        Mockery::close();  // 필수: 테스트 종료 시 Mock 정리
+        parent::tearDown();
+    }
+
+    public function test_example(): void
+    {
+        // ✅ 인터페이스 타입 지정
+        $mockPlugin = Mockery::mock(PluginInterface::class);
+        $mockPlugin->shouldReceive('getIdentifier')
+            ->andReturn('test-plugin');
+        $mockPlugin->shouldReceive('hasSettings')
+            ->andReturn(true);
+
+        // ✅ 클래스 타입 지정
+        $mockPluginManager = Mockery::mock(PluginManager::class);
+        $mockPluginManager->shouldReceive('getPlugin')
+            ->with('test-plugin')
+            ->andReturn($mockPlugin);
+
+        // 테스트 로직...
+    }
+}
+```
+
+### Mockery 체크리스트
+
+- [ ] `Mockery::mock(Interface::class)` 형태로 타입 지정
+- [ ] `tearDown()`에서 `Mockery::close()` 호출
+- [ ] 반환 타입이 있는 메서드는 해당 타입의 Mock 반환
+
+---
+
+## PHPUnit Attributes 사용
+
+```
+주의: PHPUnit 11.x부터 doc-comment annotation은 deprecated
+필수: 새 테스트 작성 시 PHP 8 Attributes 사용 (@test, @dataProvider 등 doc-comment 사용 금지)
+```
+
+### 배경
+
+- PHPUnit 11.x에서 doc-comment 기반 메타데이터 deprecated
+- PHPUnit 12에서 완전히 제거 예정
+- 기존 코드는 이미 PHP 8 Attributes로 변환 완료됨
+
+### 사용 방법
+
+**1. 기본 use 구문**
+
+```php
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Depends;
+```
+
+**2. 테스트 메서드 정의**
+
+```php
+// ❌ DON'T: deprecated annotation
+/**
+ * @test
+ */
+public function it_can_create_user(): void { ... }
+
+// ✅ DO: PHP 8 Attribute
+#[Test]
+public function it_can_create_user(): void { ... }
+```
+
+**3. DataProvider 사용**
+
+```php
+// ❌ DON'T: deprecated annotation
+/**
+ * @dataProvider validDataProvider
+ */
+public function test_validation(string $input, bool $expected): void { ... }
+
+// ✅ DO: PHP 8 Attribute
+#[Test]
+#[DataProvider('validDataProvider')]
+public function it_validates_input(string $input, bool $expected): void { ... }
+```
+
+**4. Group 지정**
+
+```php
+// 메서드 레벨
+#[Test]
+#[Group('slow')]
+public function it_processes_large_data(): void { ... }
+
+// 클래스 레벨
+#[Group('module-dependent')]
+class BoardModelTest extends TestCase { ... }
+```
+
+**5. Depends 사용**
+
+```php
+#[Test]
+public function it_creates_user(): User
+{
+    $user = User::factory()->create();
+    $this->assertNotNull($user);
+    return $user;
+}
+
+#[Test]
+#[Depends('it_creates_user')]
+public function it_updates_user(User $user): void
+{
+    $user->update(['name' => 'Updated']);
+    $this->assertEquals('Updated', $user->fresh()->name);
+}
+```
+
+### 메서드명 규칙
+
+```
+✅ DO: it_can_*, it_should_*, it_validates_* (Attribute 사용 시)
+✅ DO: test_* (Attribute 없이도 자동 인식)
+❌ DON'T: @test annotation과 test_ prefix 혼용
+```
+
+### 변환 도구
+
+기존 annotation을 Attributes로 변환해야 하는 경우:
+
+```bash
+# 통계 확인
+php artisan phpunit:convert-annotations --stats-only
+
+# Dry-run (미리보기)
+php artisan phpunit:convert-annotations --dry-run
+
+# 실제 변환 (백업 포함)
+php artisan phpunit:convert-annotations --backup
+
+# 특정 경로만 변환
+php artisan phpunit:convert-annotations --path=tests/Unit
+```
+
+### 체크리스트
+
+```
+□ 새 테스트 작성 시 #[Test] Attribute 사용했는가?
+□ use PHPUnit\Framework\Attributes\Test; 추가했는가?
+□ @test, @dataProvider 등 doc-comment annotation 사용하지 않았는가?
+□ IDE에서 deprecation 경고가 없는가?
+```
+
+---
+
+## Config 캐시와 테스트 환경
+
+### 문제 설명
+
+`php artisan config:cache` 실행 후 테스트를 실행하면 테스트 환경이 `testing`이 아닌 `local`로 적용됩니다.
+
+```
+주의: config 캐시가 존재하면 Laravel은 환경 변수를 무시
+증상: app()->environment()가 'testing'이 아닌 'local' 반환
+해결: tests/bootstrap.php에서 자동으로 config 캐시 삭제
+```
+
+### 근본 원인
+
+1. `php artisan config:cache` 실행 시 `bootstrap/cache/config.php` 파일 생성
+2. 이 캐시 파일에 `'env' => 'local'`이 하드코딩됨
+3. Laravel은 **config 캐시 파일이 존재하면 환경 변수를 완전히 무시**
+4. PHPUnit이 `APP_ENV=testing`을 설정해도 Laravel은 캐시에서 `local`을 읽어옴
+
+### 검증 결과
+
+| 상태 | `env('APP_ENV')` | `app()->environment()` |
+|------|------------------|------------------------|
+| 캐시 있음 | testing | **local** ← 문제 |
+| 캐시 삭제 | testing | **testing** ← 정상 |
+
+### 해결 방법
+
+`tests/bootstrap.php`에서 PHPUnit 실행 시 자동으로 config 캐시를 삭제합니다:
+
+```php
+// tests/bootstrap.php
+$configCacheFile = __DIR__.'/../bootstrap/cache/config.php';
+if (file_exists($configCacheFile)) {
+    unlink($configCacheFile);
+}
+```
+
+### 동작 방식
+
+1. `php artisan config:cache` 실행 → 캐시 생성 (개발/운영 환경 성능 최적화)
+2. `php artisan test` 실행 → bootstrap.php에서 캐시 자동 삭제 → testing 환경 적용
+3. 다음 웹 요청 시 → 캐시 없으면 `.env` 파일에서 읽음
+
+### 수동 해결 (참고용)
+
+```bash
+# config 캐시 삭제
+php artisan config:clear
+# 또는
+rm bootstrap/cache/config.php
+
+# 테스트 실행
+php artisan test
+```
+
+---
+
